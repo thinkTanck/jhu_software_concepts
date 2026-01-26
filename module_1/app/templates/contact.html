@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Contact{% endblock %}
+
+{% block content %}
+<section class="contact-section">
+    <!-- Page Header -->
+    <header class="page-header">
+        <h1>Contact Me</h1>
+        <p class="subtitle">Get in touch for opportunities and collaboration</p>
+    </header>
+
+    <!-- Contact Information -->
+    <div class="contact-content">
+        <div class="contact-card">
+            <!-- Email Section -->
+            <div class="contact-item">
+                <h2>Email</h2>
+                <p>
+                    <a href="mailto:{{ contact.email }}" class="contact-link">
+                        {{ contact.email }}
+                    </a>
+                </p>
+            </div>
+
+            <!-- LinkedIn Section -->
+            <div class="contact-item">
+                <h2>LinkedIn</h2>
+                <p>
+                    <a href="{{ contact.linkedin_url }}"
+                       class="contact-link"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        {{ contact.linkedin_text }}
+                    </a>
+                </p>
+            </div>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

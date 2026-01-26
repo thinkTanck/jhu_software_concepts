@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Personal Website{% endblock %}</title>
+    <!-- Link to external CSS stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar - Positioned in top-right corner -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="{{ url_for('home.home') }}">Portfolio</a>
+            </div>
+            <ul class="nav-links">
+                <!-- Navigation links with active state highlighting -->
+                <li>
+                    <a href="{{ url_for('home.home') }}"
+                       class="nav-link {% if active_page == 'home' %}active{% endif %}">
+                        Home
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('contact.contact') }}"
+                       class="nav-link {% if active_page == 'contact' %}active{% endif %}">
+                        Contact
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('projects.projects') }}"
+                       class="nav-link {% if active_page == 'projects' %}active{% endif %}">
+                        Projects
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+</body>
+</html>

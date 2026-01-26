@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Projects{% endblock %}
+
+{% block content %}
+<section class="projects-section">
+    <!-- Page Header -->
+    <header class="page-header">
+        <h1>Projects</h1>
+        <p class="subtitle">Featured projects</p>
+    </header>
+
+    <!-- Projects List -->
+    <div class="projects-content">
+        {% for project in projects %}
+        <article class="project-card">
+            <!-- Project Title -->
+            <h2 class="project-title">{{ project.title }}</h2>
+
+            <!-- Project Description -->
+            <div class="project-description">
+                <p>{{ project.description }}</p>
+            </div>
+
+            <!-- Technologies Used -->
+            <div class="project-technologies">
+                <h3>Technologies Used:</h3>
+                <ul class="tech-list">
+                    {% for tech in project.technologies %}
+                    <li class="tech-item">{{ tech }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- GitHub Repository Link -->
+            <div class="project-link">
+                <a href="{{ project.github_url }}"
+                   class="github-link"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    View on GitHub
+                </a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

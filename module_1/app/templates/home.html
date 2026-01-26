@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Home - {{ info.name }}{% endblock %}
+
+{% block content %}
+<section class="home-section">
+    <!-- Page Header -->
+    <header class="page-header">
+        <h1>{{ info.name }}</h1>
+        <p class="position">{{ info.position }}</p>
+    </header>
+
+    <!-- Biography and Profile Image Layout -->
+    <!-- Biography on LEFT, Image on RIGHT as required -->
+    <div class="home-content">
+        <!-- Biography Section - Left Side -->
+        <div class="biography">
+            <h2>About Me</h2>
+            <div class="bio-text">
+                {% for paragraph in info.biography.split('\n\n') %}
+                    <p>{{ paragraph.strip() }}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Profile Image Section - Right Side -->
+        <div class="profile-image-container">
+            <img src="{{ url_for('static', filename=info.profile_image) }}"
+                 alt="Profile photo of {{ info.name }}"
+                 class="profile-image">
+        </div>
+    </div>
+</section>
+{% endblock %}
