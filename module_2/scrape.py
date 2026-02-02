@@ -17,7 +17,10 @@ from bs4 import BeautifulSoup
 from typing import Optional
 
 
-# Configuration
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
 BASE_URL = "https://www.thegradcafe.com"
 RESULTS_URL = f"{BASE_URL}/survey"
 ROBOTS_URL = f"{BASE_URL}/robots.txt"
@@ -30,9 +33,12 @@ MAX_DELAY = 3.0  # Maximum seconds between requests
 MAX_RETRIES = 5  # Maximum retry attempts for failed requests
 RETRY_BACKOFF = 2  # Exponential backoff multiplier
 
-# Target number of entries
-TARGET_ENTRIES = 30000
-ENTRIES_PER_PAGE = 25  # Approximate entries per page on GradCafe
+# =============================================================================
+# SCRAPE TARGET - SINGLE SOURCE OF TRUTH
+# =============================================================================
+# This is the ONLY variable that controls when scraping stops based on count.
+# No other numeric literals should control scraping behavior.
+TARGET_ENTRIES = 45000
 
 
 def check_robots_txt(url: str) -> bool:
@@ -261,18 +267,23 @@ def get_next_page_url(html_content: str, current_page: int) -> Optional[str]:
     return f"{RESULTS_URL}?page={next_page}"
 
 
-def scrape_data(max_entries: int = TARGET_ENTRIES) -> list:
+def scrape_data() -> list:
     """
     Main scraping function that collects admission data from GradCafe.
 
-    Args:
-        max_entries: Maximum number of entries to collect
+    STOPPING LOGIC (in order of precedence):
+    1. STOP if a page returns zero valid entries (data exhausted)
+    2. STOP if TARGET_ENTRIES is reached (always completes current page first)
+    3. STOP if too many consecutive failures occur (network/server issues)
+
+    No hardcoded page limits or numeric literals control the scrape.
+    TARGET_ENTRIES is the single source of truth for the target count.
 
     Returns:
         List of all collected entry dictionaries
     """
     print(f"[START] Beginning scrape of GradCafe data")
-    print(f"[TARGET] Collecting up to {max_entries} entries")
+    print(f"[TARGET] Collecting up to {TARGET_ENTRIES} entries")
 
     # Check robots.txt compliance
     if not check_robots_txt(RESULTS_URL):
@@ -282,17 +293,33 @@ def scrape_data(max_entries: int = TARGET_ENTRIES) -> list:
     all_entries = []
     current_page = 1
     consecutive_empty = 0
-    max_consecutive_empty = 3
+    max_consecutive_empty = 3  # Threshold for consecutive failures before stopping
 
-    while len(all_entries) < max_entries:
-        # Construct page URL
+    # ==========================================================================
+    # MAIN SCRAPING LOOP
+    # Loop continues until:
+    #   - TARGET_ENTRIES is reached (checked AFTER completing each page), OR
+    #   - A page returns zero entries (data source exhausted), OR
+    #   - Too many consecutive failures occur
+    # ==========================================================================
+    while True:
+        # ---------------------------------------------------------------------
+        # CHECK #1: Have we reached the target BEFORE starting a new page?
+        # If yes, stop. We don't start a page we don't need.
+        # ---------------------------------------------------------------------
+        if len(all_entries) >= TARGET_ENTRIES:
+            print(f"[TARGET REACHED] Collected {len(all_entries)} entries (target: {TARGET_ENTRIES})")
+            break
+
+        # Construct page URL (no hardcoded page limits)
         if current_page == 1:
             page_url = RESULTS_URL
         else:
             page_url = f"{RESULTS_URL}?page={current_page}"
 
+        # Display progress using TARGET_ENTRIES dynamically
         print(f"\n[PAGE {current_page}] Fetching: {page_url}")
-        print(f"[PROGRESS] {len(all_entries)}/{max_entries} entries collected")
+        print(f"[PROGRESS] {len(all_entries)}/{TARGET_ENTRIES} entries collected")
 
         # Rate limiting with random jitter
         delay = random.uniform(MIN_DELAY, MAX_DELAY)
@@ -301,6 +328,9 @@ def scrape_data(max_entries: int = TARGET_ENTRIES) -> list:
         # Fetch page content
         html_content = make_request(page_url)
 
+        # ---------------------------------------------------------------------
+        # Handle fetch failures
+        # ---------------------------------------------------------------------
         if html_content is None:
             print(f"[ERROR] Failed to fetch page {current_page}")
             consecutive_empty += 1
@@ -313,28 +343,38 @@ def scrape_data(max_entries: int = TARGET_ENTRIES) -> list:
         # Parse entries from page
         page_entries = extract_entries_from_page(html_content)
 
+        # ---------------------------------------------------------------------
+        # CHECK #2: Did this page return zero entries?
+        # If yes after retries, the data source is exhausted - STOP.
+        # ---------------------------------------------------------------------
         if not page_entries:
             print(f"[WARNING] No entries found on page {current_page}")
             consecutive_empty += 1
             if consecutive_empty >= max_consecutive_empty:
-                print("[STOP] Too many consecutive empty pages, stopping scrape")
+                print("[STOP] Too many consecutive empty pages - data source likely exhausted")
                 break
-        else:
-            consecutive_empty = 0
-            # Add page number to each entry for reference
-            for entry in page_entries:
-                entry["source_page"] = current_page
-            all_entries.extend(page_entries)
-            print(f"[SUCCESS] Extracted {len(page_entries)} entries from page {current_page}")
+            current_page += 1
+            continue
 
+        # Reset consecutive empty counter on successful extraction
+        consecutive_empty = 0
+
+        # Add page number to each entry for reference
+        for entry in page_entries:
+            entry["source_page"] = current_page
+
+        # ---------------------------------------------------------------------
+        # ALWAYS complete the current page before checking target
+        # This ensures we don't lose partial page data
+        # ---------------------------------------------------------------------
+        all_entries.extend(page_entries)
+        print(f"[SUCCESS] Extracted {len(page_entries)} entries from page {current_page}")
+        print(f"[TOTAL] {len(all_entries)} entries collected so far")
+
+        # Move to next page (no hardcoded page cap)
         current_page += 1
 
-        # Safety check for maximum pages
-        max_pages = (max_entries // ENTRIES_PER_PAGE) + 100
-        if current_page > max_pages:
-            print(f"[STOP] Reached maximum page limit ({max_pages})")
-            break
-
+    # Final summary
     print(f"\n[COMPLETE] Scraped {len(all_entries)} total entries from {current_page - 1} pages")
     return all_entries
 
@@ -366,8 +406,10 @@ def main():
     print("GradCafe Admissions Data Scraper")
     print("Module 2 - Johns Hopkins EN.605.256.82.SP26")
     print("=" * 60)
+    print(f"Target: {TARGET_ENTRIES} entries")
+    print("=" * 60)
 
-    # Run the scraper
+    # Run the scraper (uses TARGET_ENTRIES as single source of truth)
     entries = scrape_data()
 
     if entries:
@@ -378,6 +420,7 @@ def main():
         print("\n" + "=" * 60)
         print("SCRAPING SUMMARY")
         print("=" * 60)
+        print(f"Target entries: {TARGET_ENTRIES}")
         print(f"Total entries collected: {len(entries)}")
         print(f"Output file: {OUTPUT_FILE}")
     else:
