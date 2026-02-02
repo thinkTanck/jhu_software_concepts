@@ -267,7 +267,7 @@ def get_next_page_url(html_content: str, current_page: int) -> Optional[str]:
     return f"{RESULTS_URL}?page={next_page}"
 
 
-def scrape_data() -> list:
+def scrape_data() -> tuple:
     """
     Main scraping function that collects admission data from GradCafe.
 
@@ -280,7 +280,10 @@ def scrape_data() -> list:
     TARGET_ENTRIES is the single source of truth for the target count.
 
     Returns:
-        List of all collected entry dictionaries
+        Tuple of (entries_list, pages_scraped, target_reached_flag)
+        - entries_list: List of all collected entry dictionaries
+        - pages_scraped: Number of pages successfully scraped
+        - target_reached: True if TARGET_ENTRIES was reached, False if ended early
     """
     print(f"[START] Beginning scrape of GradCafe data")
     print(f"[TARGET] Collecting up to {TARGET_ENTRIES} entries")
@@ -288,12 +291,14 @@ def scrape_data() -> list:
     # Check robots.txt compliance
     if not check_robots_txt(RESULTS_URL):
         print("[ABORT] Scraping not allowed by robots.txt")
-        return []
+        return ([], 0, False)
 
     all_entries = []
     current_page = 1
+    pages_successfully_scraped = 0  # Track actual successful page scrapes
     consecutive_empty = 0
     max_consecutive_empty = 3  # Threshold for consecutive failures before stopping
+    target_reached = False  # Flag to track if we hit the target vs ran out of pages
 
     # ==========================================================================
     # MAIN SCRAPING LOOP
@@ -309,6 +314,7 @@ def scrape_data() -> list:
         # ---------------------------------------------------------------------
         if len(all_entries) >= TARGET_ENTRIES:
             print(f"[TARGET REACHED] Collected {len(all_entries)} entries (target: {TARGET_ENTRIES})")
+            target_reached = True
             break
 
         # Construct page URL (no hardcoded page limits)
@@ -368,6 +374,7 @@ def scrape_data() -> list:
         # This ensures we don't lose partial page data
         # ---------------------------------------------------------------------
         all_entries.extend(page_entries)
+        pages_successfully_scraped += 1  # Increment only on successful extraction
         print(f"[SUCCESS] Extracted {len(page_entries)} entries from page {current_page}")
         print(f"[TOTAL] {len(all_entries)} entries collected so far")
 
@@ -375,8 +382,8 @@ def scrape_data() -> list:
         current_page += 1
 
     # Final summary
-    print(f"\n[COMPLETE] Scraped {len(all_entries)} total entries from {current_page - 1} pages")
-    return all_entries
+    print(f"\n[COMPLETE] Scraped {len(all_entries)} total entries from {pages_successfully_scraped} pages")
+    return (all_entries, pages_successfully_scraped, target_reached)
 
 
 def save_data(entries: list, filename: str = OUTPUT_FILE) -> bool:
@@ -400,29 +407,65 @@ def save_data(entries: list, filename: str = OUTPUT_FILE) -> bool:
         return False
 
 
+def verify_data_integrity(memory_count: int, filename: str = OUTPUT_FILE) -> bool:
+    """
+    Verify that the saved JSON file contains the expected number of entries.
+
+    Args:
+        memory_count: Number of entries in memory before save
+        filename: Path to the saved JSON file
+
+    Returns:
+        True if counts match, False otherwise
+    """
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            disk_data = json.load(f)
+        disk_count = len(disk_data)
+
+        if disk_count != memory_count:
+            print(f"[ERROR] Entry count mismatch between memory and output file.")
+            print(f"        Memory: {memory_count}, Disk: {disk_count}")
+            return False
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to verify data integrity: {e}")
+        return False
+
+
 def main():
     """Main entry point for the scraper."""
     print("=" * 60)
     print("GradCafe Admissions Data Scraper")
     print("Module 2 - Johns Hopkins EN.605.256.82.SP26")
     print("=" * 60)
-    print(f"Target: {TARGET_ENTRIES} entries")
+    # Startup configuration logging - uses TARGET_ENTRIES dynamically
+    print(f"[CONFIG] Target entries: {TARGET_ENTRIES}")
     print("=" * 60)
 
     # Run the scraper (uses TARGET_ENTRIES as single source of truth)
-    entries = scrape_data()
+    # Returns: (entries_list, pages_scraped, target_reached_flag)
+    entries, pages_scraped, target_reached = scrape_data()
 
     if entries:
         # Save to JSON
         save_data(entries)
 
-        # Print summary
-        print("\n" + "=" * 60)
+        # Verify data integrity: re-open file and compare counts
+        verify_data_integrity(len(entries), OUTPUT_FILE)
+
+        # Early termination warning (only if target was NOT reached)
+        if not target_reached:
+            print(f"[WARNING] Scrape ended early due to no more available pages.")
+
+        # Print completion summary block (exactly as specified)
+        print("\n" + "=" * 41)
         print("SCRAPING SUMMARY")
-        print("=" * 60)
         print(f"Target entries: {TARGET_ENTRIES}")
         print(f"Total entries collected: {len(entries)}")
+        print(f"Total pages scraped: {pages_scraped}")
         print(f"Output file: {OUTPUT_FILE}")
+        print("=" * 41)
     else:
         print("[FINISHED] No entries were collected")
 

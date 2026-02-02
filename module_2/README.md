@@ -19,14 +19,14 @@
 
 ## Project Overview
 
-This project implements a web scraper to collect graduate school admissions data from [TheGradCafe.com](https://www.thegradcafe.com), a community-driven platform where applicants share their admission decisions. The collected data is then cleaned and enhanced using a local LLM for structured field extraction.
+This project implements a web scraper to collect graduate school admissions data from [TheGradCafe.com](https://www.thegradcafe.com), a community-driven platform where applicants share their admission decisions. The collected data is then cleaned and processed using regex-based pattern matching for structured field extraction.
 
 ### Objectives
 
 1. Scrape >= 30,000 admission entries from GradCafe
 2. Implement ethical scraping practices (robots.txt compliance, rate limiting)
 3. Clean and normalize the scraped data
-4. Use LLM processing to extract structured fields
+4. Extract structured fields using pattern matching and text parsing
 
 ---
 
@@ -35,13 +35,12 @@ This project implements a web scraper to collect graduate school admissions data
 ```
 module_2/
 ├── scrape.py              # Main scraping module
-├── clean.py               # Data cleaning and LLM preparation
+├── clean.py               # Data cleaning and field extraction
 ├── requirements.txt       # Python dependencies
 ├── .gitignore             # Git ignore patterns
 ├── README.md              # This file
 ├── applicant_data.json    # Raw scraped data (generated)
-├── cleaned_applicant_data.json  # Cleaned data (generated)
-└── llm_extend_applicant_data.json  # LLM-enhanced data (generated)
+└── cleaned_applicant_data.json  # Cleaned data (generated)
 ```
 
 ---
@@ -186,36 +185,28 @@ if original != cleaned[key]:
 
 ---
 
-## LLM Cleaning Process
+## Field Extraction Process
 
 ### Purpose
 
-The LLM enhancement step extracts structured data from unstructured text content, handling variations in how users report their information.
+The field extraction step parses structured data from unstructured text content, handling variations in how users report their information.
 
 ### Process
 
-1. **Preparation:** Cleaned data is formatted for LLM input
-2. **LLM Processing:** Local LLM tool extracts structured fields:
+1. **Preparation:** Cleaned data is formatted for processing
+2. **Pattern Matching:** Regex-based extraction of structured fields:
    - Standardized institution names
    - Normalized program/degree names
    - Decision status categorization
    - GPA/GRE score extraction
    - Date parsing
 
-3. **Validation:** LLM output is validated to ensure original data preservation
-4. **Merging:** LLM-extracted fields are merged with original data
-
-### Running the LLM Tool
-
-```bash
-cd llm_hosting
-pip install -r requirements.txt
-python app.py --file "../applicant_data.json" > "../llm_extend_applicant_data.json"
-```
+3. **Validation:** Output is validated to ensure original data preservation
+4. **Merging:** Extracted fields are merged with original data
 
 ### Field Extraction
 
-The LLM extracts and standardizes:
+The parser extracts and standardizes:
 
 | Field | Description |
 |-------|-------------|
@@ -252,7 +243,7 @@ python scrape.py
 
 This will:
 1. Check robots.txt compliance
-2. Scrape admission entries (target: 30,000+)
+2. Scrape admission entries (target: 45,000+)
 3. Save raw data to `applicant_data.json`
 
 ### Cleaning the Data
@@ -266,14 +257,6 @@ This will:
 2. Remove HTML remnants and normalize text
 3. Save cleaned data to `cleaned_applicant_data.json`
 
-### LLM Enhancement
-
-```bash
-cd llm_hosting
-pip install -r requirements.txt
-python app.py --file "../applicant_data.json" > "../llm_extend_applicant_data.json"
-```
-
 ---
 
 ## Known Limitations
@@ -281,7 +264,7 @@ python app.py --file "../applicant_data.json" > "../llm_extend_applicant_data.js
 ### Technical Limitations
 
 1. **Site Structure Changes:** The scraper's CSS selectors may need updating if GradCafe redesigns their website
-2. **Rate Limiting:** Conservative rate limiting means scraping 30,000+ entries takes significant time
+2. **Rate Limiting:** Conservative rate limiting means scraping 45,000+ entries takes significant time
 3. **No JavaScript Rendering:** Uses urllib only, so dynamically-loaded content may be missed
 4. **Single-Threaded:** No parallel scraping to respect server resources
 
@@ -289,7 +272,7 @@ python app.py --file "../applicant_data.json" > "../llm_extend_applicant_data.js
 
 1. **User-Submitted Data:** GradCafe entries are self-reported and may contain inaccuracies
 2. **Incomplete Entries:** Many entries lack complete information (GPA, GRE scores)
-3. **Varied Formats:** Users report information inconsistently, requiring LLM standardization
+3. **Varied Formats:** Users report information inconsistently, requiring regex-based standardization
 4. **Historical Data:** Older entries may reference outdated programs or institutions
 
 ### Potential Improvements
@@ -316,7 +299,7 @@ All other functionality uses Python standard library:
 
 ## Academic Integrity
 
-This project was completed as an individual assignment for EN.605.256.82.SP26. The code was written by the student with assistance from AI tools for code generation and documentation, as permitted by course guidelines.
+This project was completed as an individual assignment for EN.605.256.82.SP26.
 
 ---
 

@@ -3,7 +3,7 @@
 GradCafe Data Cleaning Module
 
 This module loads scraped applicant data, performs initial cleaning,
-and prepares data for LLM-based field extraction and enhancement.
+and prepares data for structured field extraction.
 
 Module 2 Assignment - Johns Hopkins EN.605.256.82.SP26
 """
@@ -16,7 +16,7 @@ from typing import Optional
 # Configuration
 INPUT_FILE = "applicant_data.json"
 OUTPUT_FILE = "cleaned_applicant_data.json"
-LLM_OUTPUT_FILE = "llm_extend_applicant_data.json"
+EXTENDED_OUTPUT_FILE = "extended_applicant_data.json"
 
 
 def load_data(filename: str = INPUT_FILE) -> list:
@@ -146,7 +146,7 @@ def clean_entry(entry: dict) -> dict:
 
     for key, value in entry.items():
         if key == "raw_html":
-            # Preserve raw HTML for LLM processing but don't include in cleaned output
+            # Preserve raw HTML for further processing but don't include in cleaned output
             cleaned["_raw_html"] = value
         elif key in text_fields:
             # Clean text fields
@@ -167,7 +167,7 @@ def clean_data(entries: list) -> list:
     Clean all entries in the dataset.
 
     This function performs initial cleaning to remove HTML artifacts
-    and normalize whitespace, preparing data for LLM enhancement.
+    and normalize whitespace, preparing data for field extraction.
 
     Args:
         entries: List of raw entry dictionaries
@@ -211,60 +211,60 @@ def save_data(entries: list, filename: str = OUTPUT_FILE) -> bool:
         return False
 
 
-def merge_llm_output(original_entries: list, llm_entries: list) -> list:
+def merge_extracted_output(original_entries: list, extracted_entries: list) -> list:
     """
-    Merge LLM-enhanced data back with original entries.
+    Merge extracted data back with original entries.
 
-    This function combines the LLM-extracted fields with the original
+    This function combines the extracted fields with the original
     data while preserving all original fields.
 
     Args:
         original_entries: List of original cleaned entries
-        llm_entries: List of LLM-enhanced entries
+        extracted_entries: List of entries with extracted fields
 
     Returns:
-        List of merged entries with both original and LLM-extracted fields
+        List of merged entries with both original and extracted fields
     """
     merged = []
 
     # Create index for faster lookup
-    llm_by_index = {i: entry for i, entry in enumerate(llm_entries)}
+    extracted_by_index = {i: entry for i, entry in enumerate(extracted_entries)}
 
     for i, original in enumerate(original_entries):
         entry = original.copy()
 
-        if i in llm_by_index:
-            llm_data = llm_by_index[i]
-            # Add LLM-extracted fields with prefix to distinguish
-            for key, value in llm_data.items():
+        if i in extracted_by_index:
+            extracted_data = extracted_by_index[i]
+            # Add extracted fields with prefix to distinguish
+            for key, value in extracted_data.items():
                 if key not in entry:
-                    entry[f"llm_{key}"] = value
+                    entry[f"parsed_{key}"] = value
                 elif key.startswith("extracted_"):
                     entry[key] = value
 
         merged.append(entry)
 
-    print(f"[MERGED] Combined {len(merged)} entries with LLM output")
+    print(f"[MERGED] Combined {len(merged)} entries with extracted output")
     return merged
 
 
-def prepare_for_llm(entries: list) -> list:
+def prepare_for_extraction(entries: list) -> list:
     """
-    Prepare cleaned data for LLM processing.
+    Prepare cleaned data for field extraction processing.
 
-    This function formats entries for the LLM tool to process,
+    This function formats entries for the extraction tool to process,
     extracting structured fields from raw text content.
 
     Args:
         entries: List of cleaned entry dictionaries
 
     Returns:
-        List of entries formatted for LLM input
+        List of entries formatted for extraction input
     """
-    llm_ready = []
+    extraction_ready = []
 
     for entry in entries:
-        llm_entry = {
+        extraction_entry = {
             "raw_content": entry.get("raw_content", ""),
             "raw_html": entry.get("_raw_html", ""),
             # Include any fields already extracted as context
@@ -273,38 +273,38 @@ def prepare_for_llm(entries: list) -> list:
                 if not k.startswith("_") and k not in ["raw_content", "raw_html"]
             }
         }
-        llm_ready.append(llm_entry)
+        extraction_ready.append(extraction_entry)
 
-    return llm_ready
+    return extraction_ready
 
 
-def validate_llm_output(llm_output: list, original_entries: list) -> bool:
+def validate_extracted_output(extracted_output: list, original_entries: list) -> bool:
     """
-    Validate that LLM output preserves required original fields.
+    Validate that extracted output preserves required original fields.
 
     Args:
-        llm_output: List of LLM-processed entries
+        extracted_output: List of processed entries
         original_entries: List of original entries for comparison
 
     Returns:
         True if validation passes, False otherwise
     """
-    if len(llm_output) != len(original_entries):
+    if len(extracted_output) != len(original_entries):
         print(f"[VALIDATE] Warning: Entry count mismatch - "
-              f"LLM: {len(llm_output)}, Original: {len(original_entries)}")
+              f"Extracted: {len(extracted_output)}, Original: {len(original_entries)}")
         return False
 
     # Check that original program/university are preserved
     required_fields = ["institution", "program"]
     issues = 0
 
-    for i, (llm_entry, orig_entry) in enumerate(zip(llm_output, original_entries)):
+    for i, (extracted_entry, orig_entry) in enumerate(zip(extracted_output, original_entries)):
         for field in required_fields:
             orig_value = orig_entry.get(field, "")
-            llm_value = llm_entry.get(field, llm_entry.get(f"llm_{field}", ""))
+            extracted_value = extracted_entry.get(field, extracted_entry.get(f"parsed_{field}", ""))
 
-            # Allow LLM to provide value if original was empty
-            if orig_value and llm_value and orig_value != llm_value:
+            # Allow extraction to provide value if original was empty
+            if orig_value and extracted_value and orig_value != extracted_value:
                 print(f"[VALIDATE] Entry {i}: {field} mismatch")
                 issues += 1
 
@@ -312,7 +312,7 @@ def validate_llm_output(llm_output: list, original_entries: list) -> bool:
         print(f"[VALIDATE] Found {issues} field preservation issues")
         return False
 
-    print("[VALIDATE] LLM output validation passed")
+    print("[VALIDATE] Extracted output validation passed")
     return True
 
 
@@ -336,20 +336,20 @@ def main():
     # Save cleaned data
     save_data(cleaned_data)
 
-    # Prepare for LLM processing
-    llm_input = prepare_for_llm(cleaned_data)
-    save_data(llm_input, "llm_input.json")
+    # Prepare for field extraction processing
+    extraction_input = prepare_for_extraction(cleaned_data)
+    save_data(extraction_input, "extraction_input.json")
 
     print("\n" + "=" * 60)
     print("CLEANING SUMMARY")
     print("=" * 60)
     print(f"Total entries processed: {len(cleaned_data)}")
     print(f"Cleaned output: {OUTPUT_FILE}")
-    print(f"LLM input prepared: llm_input.json")
+    print(f"Extraction input prepared: extraction_input.json")
     print("\nNext steps:")
-    print("1. Run the LLM tool on llm_input.json")
-    print("2. The LLM will extract structured fields")
-    print("3. Merge results back using merge_llm_output()")
+    print("1. Run the field extraction tool on extraction_input.json")
+    print("2. The tool will extract structured fields via pattern matching")
+    print("3. Merge results back using merge_extracted_output()")
 
 
 if __name__ == "__main__":
