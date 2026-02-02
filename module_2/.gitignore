@@ -60,3 +60,6 @@ desktop.ini
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Scraper output
+applicant_data.json
