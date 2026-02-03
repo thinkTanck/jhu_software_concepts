@@ -308,7 +308,7 @@ def _cli_process_file(
             row["llm-generated-program"] = result["standardized_program"]
             row["llm-generated-university"] = result["standardized_university"]
 
-            json.dump(row, sink, ensure_ascii=False)
+            json.dump(row, sink, ensure_ascii=True)
             sink.write("\n")
             sink.flush()
     finally:

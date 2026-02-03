@@ -1,32 +1,64 @@
 # Module 2: Web Scraping - GradCafe Admissions Data
 
-**Course:** EN.605.256.82.SP26 - Software Concepts
-**Institution:** Johns Hopkins University
-**Assignment:** Module 2 - Web Scraping
-**Due Date:** [INSERT DUE DATE]
-
 ## Student Information
 
-- **Name:** [YOUR NAME]
-- **JHED ID:** [YOUR JHED]
+- **Name:** Dameion Ayers
+- **JHED ID:** 8489A0
 
-## Repository
+## Module Info
 
-- **GitHub Repository:** [thinkTanck/jhu_software_concepts](https://github.com/thinkTanck/jhu_software_concepts) (Private)
-- **Module Directory:** `module_2/`
+- **Module:** Module 2
+- **Assignment:** Web Scraping
+- **Course:** EN.605.256.82.SP26 - Software Concepts
+- **Institution:** Johns Hopkins University
+- **Due Date:** 2.1.26
 
 ---
 
-## Project Overview
+## Approach
 
-This project implements a web scraper to collect graduate school admissions data from [TheGradCafe.com](https://www.thegradcafe.com), a community-driven platform where applicants share their admission decisions. The collected data is then cleaned and processed using regex-based pattern matching for structured field extraction.
+This project implements a complete web scraping and data cleaning pipeline for graduate school admissions data from TheGradCafe.com. The implementation follows a multi-stage approach:
 
-### Objectives
+### Stage 1: Web Scraping
 
-1. Scrape >= 30,000 admission entries from GradCafe
-2. Implement ethical scraping practices (robots.txt compliance, rate limiting)
-3. Clean and normalize the scraped data
-4. Extract structured fields using pattern matching and text parsing
+1. **robots.txt Compliance Check**: Before any scraping begins, the scraper programmatically reads and parses the site's robots.txt file using Python's `urllib.robotparser` module to ensure compliance with the site's crawling policies.
+
+2. **HTTP Request Handling**: All HTTP requests are made using Python's standard `urllib` library with realistic browser headers (User-Agent, Accept, Accept-Language). A 30-second timeout is configured for each request.
+
+3. **HTML Parsing with BeautifulSoup**: Each page's HTML content is parsed using BeautifulSoup. The parser uses multiple CSS selector fallbacks to handle potential variations in site structure:
+   - Table-based layouts (`table tbody tr`)
+   - Card-based layouts (`.result-row`, `.card`)
+   - Generic repeating elements with regex matching
+
+4. **Pagination**: The scraper iterates through paginated results by constructing sequential page URLs (`?page=2`, `?page=3`, etc.) until the target entry count is reached or no more pages exist.
+
+5. **Rate Limiting**: A random delay of 1-3 seconds is applied between requests to respect server resources. No parallel requests are made.
+
+6. **Retry Logic with Exponential Backoff**: Transient errors (HTTP 429, 5xx) trigger automatic retries with exponential backoff (1s, 2s, 4s, 8s, 16s) up to 5 attempts.
+
+7. **Raw Data Storage**: Scraped data is stored in JSON format (`applicant_data.json`), preserving the raw HTML content of each entry for downstream processing.
+
+### Stage 2: Data Cleaning with Instructor-Provided Local LLM Tooling
+
+The local LLM tooling used in this stage is provided by the instructor as part of the assignment materials. It is used exclusively for post-scraping data normalization and structured field extraction—it does not generate or fabricate any data.
+
+1. **LLM-Based Cleaning**: The provided local LLM tooling (`llm_hosting/app.py`) is used to clean and normalize the scraped records. This processes each entry to extract structured fields from unstructured text.
+
+2. **Field Extraction**: The LLM extracts and normalizes:
+   - Standardized university/institution names
+   - Normalized program and degree names
+   - Decision status categorization
+   - GPA and GRE score extraction where available
+
+3. **Original Field Preservation**: Original program names and raw content are preserved alongside cleaned fields to ensure traceability and reproducibility. This allows verification that the cleaning process did not alter the source data incorrectly.
+
+4. **Output Format**: The LLM tooling writes output as newline-delimited JSON (JSONL format) — one JSON object per line — matching the behavior of the provided tooling.
+
+### Stage 3: Output Generation
+
+1. **Sample Output**: A fully validated cleaned sample file is generated to demonstrate correctness of the entire pipeline.
+
+2. **Full Dataset Output**: A large partial output file from full-dataset processing is generated to demonstrate execution at scale.
 
 ---
 
@@ -34,190 +66,66 @@ This project implements a web scraper to collect graduate school admissions data
 
 ```
 module_2/
-├── scrape.py              # Main scraping module
-├── clean.py               # Data cleaning and field extraction
-├── requirements.txt       # Python dependencies
-├── .gitignore             # Git ignore patterns
-├── README.md              # This file
-├── applicant_data.json    # Raw scraped data (generated)
-└── cleaned_applicant_data.json  # Cleaned data (generated)
+├── scrape.py                      # Main scraping module
+├── clean.py                       # Data cleaning utilities
+├── requirements.txt               # Python dependencies
+├── .gitignore                     # Git ignore patterns
+├── README.md                      # This file
+└── llm_hosting/                   # Instructor-provided LLM tooling
+    ├── app.py                     # LLM processing script
+    ├── requirements.txt           # LLM dependencies
+    └── models/                    # Model files (not tracked in git)
 ```
+
+**Generated at Runtime (not tracked in git):**
+- `applicant_data.json` — Raw scraped data (~30,000+ entries)
+- `applicant_data_sample.json` — Sample subset for validation
+- `llm_extend_applicant_data.json` — LLM-cleaned full dataset output (partial)
+- `llm_extend_applicant_data_sample.json` — LLM-cleaned sample output (complete)
 
 ---
 
-## Scraping Approach
+## Known Bugs / Limitations
 
-### Data Source
+### LLM Processing Constraints
 
-TheGradCafe provides a survey/results page where users submit their graduate school admission outcomes. Each entry typically includes:
+1. **CPU-Only Execution**: The local LLM runs on CPU only, which is extremely time-consuming at scale. There is no GPU acceleration available in this configuration.
 
-- Institution name
-- Program/Department
-- Decision status (Accepted, Rejected, Waitlisted, Interview)
-- Date of decision
-- Applicant statistics (GPA, GRE scores)
-- Comments and notes
+2. **Extended Runtime**: Full LLM processing of the entire dataset (~30,000+ records) requires multiple hours on typical laptop hardware. Each record requires individual inference.
 
-### Technical Implementation
+3. **Incomplete Full-Dataset Processing**: Execution was halted before full completion due to runtime constraints. The pipeline logic is complete and correct, but practical time limitations prevented processing all records.
 
-#### 1. HTTP Requests (`urllib`)
+4. **Validated Sample Included**: A fully validated cleaned sample file (`llm_extend_applicant_data_sample.json`) is generated to demonstrate correctness of the pipeline on a representative subset.
 
-The scraper uses Python's `urllib` library exclusively (no `requests` library):
+5. **Partial Full-Dataset Output**: A large partial output file (`llm_extend_applicant_data.json`) is generated to demonstrate that execution at scale was attempted and the pipeline functions correctly.
 
-```python
-from urllib import request, parse, error, robotparser
-```
+### Output Format
 
-- **User-Agent Header:** A realistic browser User-Agent string is sent with each request to avoid blocking
-- **Request Headers:** Full browser-like headers including Accept, Accept-Language, etc.
-- **Timeout Handling:** 30-second timeout for each request
+6. **Newline-Delimited JSON**: The LLM output is written as newline-delimited JSON (one JSON object per record), not a single JSON array. This matches the behavior of the provided tooling and is intentional.
 
-#### 2. Pagination Logic
+### Platform-Specific Issues
 
-GradCafe uses URL-based pagination. The scraper:
+7. **Windows Unicode Encoding**: A Unicode encoding issue was encountered when streaming LLM output to stdout on Windows. Non-ASCII characters in institution or program names caused `UnicodeEncodeError` exceptions.
 
-1. Starts at the main results page (`/survey`)
-2. Extracts entries from the current page
-3. Constructs the next page URL (e.g., `?page=2`, `?page=3`, etc.)
-4. Continues until target entry count is reached or no more pages exist
+8. **Applied Fix**: A small, necessary fix was applied to ensure compatibility:
+   - In `llm_hosting/app.py`, the output was modified to use `json.dump(..., ensure_ascii=True)` to prevent `UnicodeEncodeError` during stdout streaming.
+   - This change affects only character encoding in the output (ASCII-escaping non-ASCII characters), not data content or processing logic.
 
-#### 3. HTML Parsing
+### Scraping Limitations
 
-BeautifulSoup is used for HTML parsing with multiple fallback selectors:
+9. **Site Structure Dependency**: The scraper's CSS selectors may need updating if GradCafe redesigns their website structure.
 
-```python
-from bs4 import BeautifulSoup
-```
-
-The parser tries various CSS selectors to accommodate potential site structure changes:
-- Table-based layouts (`table tbody tr`)
-- Card-based layouts (`.result-row`, `.card`)
-- Generic repeating elements
-
-#### 4. Rate Limiting
-
-To be respectful of server resources:
-
-- **Delay Between Requests:** Random delay between 1-3 seconds
-- **No Parallel Requests:** Sequential page fetching only
-
-#### 5. Retry Logic with Exponential Backoff
-
-For handling transient errors:
-
-```python
-MAX_RETRIES = 5
-RETRY_BACKOFF = 2  # Exponential multiplier
-
-# On failure: wait 1s, 2s, 4s, 8s, 16s
-```
-
-Handles:
-- HTTP 429 (Too Many Requests)
-- HTTP 5xx (Server Errors)
-- Network timeouts and URL errors
+10. **No JavaScript Rendering**: The scraper uses `urllib` only and cannot process dynamically-loaded content that requires JavaScript execution.
 
 ---
 
-## robots.txt Compliance
+## Reproducibility Notes
 
-### Automated Compliance Check
+- **Full Execution**: The complete pipeline can be executed given sufficient runtime and CPU resources. All logic is implemented and functional.
 
-The scraper programmatically checks robots.txt before beginning:
+- **Sample Validation**: The generated sample output (`llm_extend_applicant_data_sample.json`) demonstrates expected behavior for all processed records and can be used to verify pipeline correctness.
 
-```python
-from urllib import robotparser
-
-def check_robots_txt(url: str) -> bool:
-    rp = robotparser.RobotFileParser()
-    rp.set_url(ROBOTS_URL)
-    rp.read()
-    return rp.can_fetch(USER_AGENT, url)
-```
-
-### Compliance Measures
-
-1. **Pre-Scrape Verification:** robots.txt is read and parsed before any scraping begins
-2. **User-Agent Respect:** The scraper identifies itself and respects User-Agent specific rules
-3. **Crawl-Delay:** If robots.txt specifies a crawl delay, the scraper would respect it
-4. **Disallowed Paths:** Any paths marked as disallowed are not accessed
-
-### Ethical Considerations
-
-- The scraper does not bypass any access restrictions
-- Rate limiting is implemented even if not required by robots.txt
-- User-submitted public data is collected (no private/authenticated content)
-- Data is used for educational purposes only
-
----
-
-## Data Cleaning Process
-
-### Initial Cleaning (`clean.py`)
-
-The cleaning module performs several preprocessing steps:
-
-#### 1. HTML Remnant Removal
-
-```python
-def remove_html_tags(text: str) -> str:
-    clean = re.sub(r"<[^>]+>", " ", text)
-    # Also handles HTML entities: &nbsp;, &amp;, etc.
-```
-
-#### 2. Whitespace Normalization
-
-```python
-def normalize_whitespace(text: str) -> str:
-    clean = re.sub(r"[\t\n\r\f\v]+", " ", text)
-    clean = re.sub(r" +", " ", clean)
-    return clean.strip()
-```
-
-#### 3. Field Preservation
-
-Original field values are preserved with `_original_` prefix when modified:
-
-```python
-if original != cleaned[key]:
-    cleaned[f"_original_{key}"] = original
-```
-
----
-
-## Field Extraction Process
-
-### Purpose
-
-The field extraction step parses structured data from unstructured text content, handling variations in how users report their information.
-
-### Process
-
-1. **Preparation:** Cleaned data is formatted for processing
-2. **Pattern Matching:** Regex-based extraction of structured fields:
-   - Standardized institution names
-   - Normalized program/degree names
-   - Decision status categorization
-   - GPA/GRE score extraction
-   - Date parsing
-
-3. **Validation:** Output is validated to ensure original data preservation
-4. **Merging:** Extracted fields are merged with original data
-
-### Field Extraction
-
-The parser extracts and standardizes:
-
-| Field | Description |
-|-------|-------------|
-| `extracted_institution` | Standardized university name |
-| `extracted_program` | Normalized program name |
-| `extracted_degree` | Degree type (PhD, MS, MA, etc.) |
-| `extracted_decision` | Categorized decision |
-| `extracted_gpa` | Numeric GPA if mentioned |
-| `extracted_gre_v` | GRE Verbal score |
-| `extracted_gre_q` | GRE Quantitative score |
-| `extracted_date` | ISO-formatted date |
+- **Resumability**: The scraper stores raw data to JSON before LLM processing, allowing the expensive scraping step to be performed once and LLM processing to be resumed or rerun independently.
 
 ---
 
@@ -232,55 +140,27 @@ The parser extracts and standardizes:
 
 ```bash
 cd module_2
-pip install -r requirements.txt
+py -m pip install -r requirements.txt
 ```
 
 ### Running the Scraper
 
 ```bash
-python scrape.py
+py scrape.py
 ```
 
-This will:
-1. Check robots.txt compliance
-2. Scrape admission entries (target: 45,000+)
-3. Save raw data to `applicant_data.json`
-
-### Cleaning the Data
+### Running the LLM Cleaning
 
 ```bash
-python clean.py
+cd llm_hosting
+py -m pip install -r requirements.txt
+py app.py --file "../applicant_data.json" > "../llm_extend_applicant_data.json"
 ```
 
-This will:
-1. Load `applicant_data.json`
-2. Remove HTML remnants and normalize text
-3. Save cleaned data to `cleaned_applicant_data.json`
-
----
-
-## Known Limitations
-
-### Technical Limitations
-
-1. **Site Structure Changes:** The scraper's CSS selectors may need updating if GradCafe redesigns their website
-2. **Rate Limiting:** Conservative rate limiting means scraping 45,000+ entries takes significant time
-3. **No JavaScript Rendering:** Uses urllib only, so dynamically-loaded content may be missed
-4. **Single-Threaded:** No parallel scraping to respect server resources
-
-### Data Limitations
-
-1. **User-Submitted Data:** GradCafe entries are self-reported and may contain inaccuracies
-2. **Incomplete Entries:** Many entries lack complete information (GPA, GRE scores)
-3. **Varied Formats:** Users report information inconsistently, requiring regex-based standardization
-4. **Historical Data:** Older entries may reference outdated programs or institutions
-
-### Potential Improvements
-
-1. Implement caching to resume interrupted scrapes
-2. Add data validation rules for GPA/GRE ranges
-3. Create institution name mapping for standardization
-4. Implement incremental scraping for updates
+For sample processing:
+```bash
+py app.py --file "../applicant_data_sample.json" > "../llm_extend_applicant_data_sample.json"
+```
 
 ---
 
@@ -300,9 +180,3 @@ All other functionality uses Python standard library:
 ## Academic Integrity
 
 This project was completed as an individual assignment for EN.605.256.82.SP26.
-
----
-
-## License
-
-This project is submitted for academic purposes only and is not licensed for external use.

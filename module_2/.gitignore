@@ -63,3 +63,9 @@ htmlcov/
 
 # Scraper output
 applicant_data.json
+
+# Newline-delimited JSON artifacts
+*.jsonl
+
+# Local LLM model weights and caches
+llm_hosting/models/
