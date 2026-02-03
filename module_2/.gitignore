@@ -61,8 +61,6 @@ desktop.ini
 .coverage
 htmlcov/
 
-# Scraper output
-applicant_data.json
 
 # Newline-delimited JSON artifacts
 *.jsonl
