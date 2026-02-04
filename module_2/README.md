@@ -117,6 +117,16 @@ module_2/
 
 10. **No JavaScript Rendering**: The scraper uses `urllib` only and cannot process dynamically-loaded content that requires JavaScript execution.
 
+### Technical Issues — 2.3.26
+
+A second attempt was made to run the instructor-provided local LLM tool on 2.3.26 against the full scraped dataset.
+
+Unlike the prior run on 2.2.26, which executed for several hours and was manually stopped due to extended runtime, this attempt terminated unexpectedly before any usable output was written.
+
+The PowerShell session closed after approximately 3.5 hours of execution. No output file was produced during this run, and no Python traceback was visible in the terminal at the time of termination. The most likely contributing factors are prolonged CPU utilization and system instability during long-running, CPU-bound inference on a Windows laptop environment.
+
+The earlier partial output file (`llm_extend_applicant_data.json`) remains from the 2.2.26 run and was not modified by this attempt. A further run will be attempted under improved runtime conditions to allow the process to complete.
+
 ---
 
 ## Reproducibility Notes
