@@ -110,10 +110,13 @@ def _fake_query_fn():
 # Database URL
 # ---------------------------------------------------------------------------
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://postgres:59061076@localhost:5432/gradcafe_module3",
-)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL environment variable is not set. "
+        "Export it before running the test suite, e.g.:\n"
+        "  export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres"
+    )
 
 
 # ---------------------------------------------------------------------------

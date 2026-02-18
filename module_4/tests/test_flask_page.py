@@ -254,3 +254,27 @@ def test_default_scraper_loads_scrape_py(monkeypatch, tmp_path):
 
     rows = app_mod._default_scraper()
     assert rows == [{"test": True}]
+
+
+@pytest.mark.web
+def test_get_db_connection_raises_when_no_database_url():
+    """
+    _get_db_connection must raise RuntimeError when DATABASE_URL is not
+    present in the app config (neither env var nor config_object).
+
+    This covers the guard branch added to prevent silent mis-connections.
+    """
+    from src.app import create_app as _factory
+    import pytest as _pytest
+
+    # Create app without DATABASE_URL in env and without passing it explicitly.
+    # The env var may be set in the test environment, so we temporarily clear it
+    # inside the app config after creation.
+    _app = _factory({"TESTING": True, "QUERY_FN": lambda: {}})
+    # Remove DATABASE_URL from config to trigger the guard
+    _app.config.pop("DATABASE_URL", None)
+
+    with _app.test_request_context():
+        with _pytest.raises(RuntimeError, match="DATABASE_URL is not set"):
+            from src.app import _get_db_connection
+            _get_db_connection()

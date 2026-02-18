@@ -13,6 +13,7 @@ Verifies:
 All tests are marked ``buttons``.
 """
 
+import os
 import pytest
 from src.app import create_app
 
@@ -52,7 +53,7 @@ def _make_busy_app(busy_state=None):
 
     app = create_app({
         "TESTING": True,
-        "DATABASE_URL": "postgresql://postgres:59061076@localhost:5432/gradcafe_module3",
+        "DATABASE_URL": os.environ.get("DATABASE_URL", "postgresql://localhost/test"),
         "SCRAPER_FN": fake_scraper,
         "LOADER_FN": fake_loader,
         "QUERY_FN": fake_query,

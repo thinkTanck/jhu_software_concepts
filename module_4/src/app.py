@@ -21,6 +21,7 @@ These are stored on app.config so tests can override them.
 """
 
 import os
+import inspect
 from flask import Flask, render_template, jsonify, current_app
 import psycopg
 
@@ -110,7 +111,9 @@ def create_app(config_object=None):
     Configuration keys understood by the app:
 
     - **DATABASE_URL**: libpq-compatible connection string.
-      Falls back to the DATABASE_URL environment variable.
+      Must be provided via the ``DATABASE_URL`` environment variable or
+      passed explicitly in ``config_object``.  No hard-coded default.
+      A ``RuntimeError`` is raised at request time if the key is absent.
     - **SCRAPER_FN**: callable() -> list[dict]  – override the real scraper.
     - **LOADER_FN**: callable(rows, conn)      – override the real loader.
     - **QUERY_FN**: callable(conn) -> dict    – override the real queries.
@@ -121,12 +124,18 @@ def create_app(config_object=None):
     """
     app = Flask(__name__, template_folder="templates")
 
-    # ---- Defaults ----
+    # ---- Defaults (no hard-coded DB credentials) ----
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "module4-dev-key")
-    app.config["DATABASE_URL"] = os.environ.get(
-        "DATABASE_URL",
-        "postgresql://postgres:59061076@localhost:5432/gradcafe_module3",
-    )
+
+    # DATABASE_URL: read from environment; do NOT provide a hard-coded fallback
+    # so that missing config fails loudly rather than silently connecting to the
+    # wrong database.
+    env_db_url = os.environ.get("DATABASE_URL")
+    if env_db_url:
+        app.config["DATABASE_URL"] = env_db_url
+    # If not in env, leave unset here — caller must supply it via config_object,
+    # or _get_db_connection() will raise a clear RuntimeError at request time.
+
     app.config["SCRAPER_FN"] = _default_scraper
     app.config["LOADER_FN"] = _default_loader
     app.config["QUERY_FN"] = _default_query_all
@@ -151,8 +160,14 @@ def create_app(config_object=None):
 # ---------------------------------------------------------------------------
 
 def _get_db_connection():
-    """Open and return a psycopg connection using DATABASE_URL."""
-    url = current_app.config["DATABASE_URL"]
+    """Open and return a psycopg connection using DATABASE_URL from config."""
+    url = current_app.config.get("DATABASE_URL")
+    if not url:
+        raise RuntimeError(
+            "DATABASE_URL is not set.  "
+            "Provide it via the DATABASE_URL environment variable or "
+            "pass it in the config_object to create_app()."
+        )
     return psycopg.connect(url)
 
 
@@ -172,12 +187,11 @@ def _register_routes(app: Flask):
         them to the analysis.html template.
 
         If QUERY_FN is set to a function that accepts zero arguments
-        (detected via ``__code__.co_argcount == 0``), the DB connection
-        is not opened — this is used by tests that supply a pure fake.
+        (detected via ``inspect.signature``), the DB connection is not
+        opened — this is used by tests that supply a pure fake.
         Otherwise a real connection is opened, passed in, and closed.
         """
         query_fn = current_app.config["QUERY_FN"]
-        import inspect
         sig = inspect.signature(query_fn)
         needs_conn = len(sig.parameters) > 0
 
