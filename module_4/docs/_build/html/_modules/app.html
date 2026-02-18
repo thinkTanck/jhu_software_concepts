@@ -1,0 +1,354 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>app &mdash; GradCafe Admissions Analysis 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GradCafe Admissions Analysis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GradCafe Admissions Analysis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">app</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for app</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">app.py</span>
+
+<span class="sd">Flask web application for Module 4.</span>
+
+<span class="sd">Provides an app factory (create_app) so that tests can instantiate</span>
+<span class="sd">the application without side-effects at import time.</span>
+
+<span class="sd">The application:</span>
+<span class="sd">- Connects to a PostgreSQL database via DATABASE_URL (env var or config)</span>
+<span class="sd">- Executes analytical queries defined in query_data.py</span>
+<span class="sd">- Displays results on a styled analysis page</span>
+<span class="sd">- Provides /pull-data and /update-analysis endpoints with busy-state gating</span>
+
+<span class="sd">Dependency injection:</span>
+<span class="sd">- scraper_fn  : callable() -&gt; list[dict]  (default: real scraper)</span>
+<span class="sd">- loader_fn   : callable(rows, conn)      (default: real loader)</span>
+<span class="sd">- query_fn    : callable(conn) -&gt; dict    (default: real query_all)</span>
+
+<span class="sd">These are stored on app.config so tests can override them.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">current_app</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">psycopg</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Busy-state (module-level so it survives request boundaries in tests)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="n">_busy</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_busy</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return current busy state (injectable in tests via app.config).&quot;&quot;&quot;</span>
+    <span class="n">getter</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BUSY_GETTER&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">getter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">getter</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_busy</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_set_busy</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set busy state (injectable in tests via app.config).&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_busy</span>
+    <span class="n">setter</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BUSY_SETTER&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">setter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">setter</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_busy</span> <span class="o">=</span> <span class="n">value</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Default scraper / loader / query callables</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_scraper</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Real scraper: import and call the module_2 scrape pipeline.</span>
+
+<span class="sd">    Returns a list of raw row dicts scraped from GradCafe.</span>
+<span class="sd">    This import is deferred so tests that override SCRAPER_FN</span>
+<span class="sd">    never trigger a real network call.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+
+    <span class="n">scrape_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;module_2&quot;</span> <span class="o">/</span> <span class="s2">&quot;scrape.py&quot;</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="s2">&quot;_scrape&quot;</span><span class="p">,</span> <span class="n">scrape_path</span><span class="p">)</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mod</span><span class="o">.</span><span class="n">scrape</span><span class="p">()</span>  <span class="c1"># expects scrape.py to expose scrape() -&gt; list[dict]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_loader</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">conn</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Real loader: insert rows into the database.</span>
+
+<span class="sd">    Delegates to load_data.load_rows(rows, conn).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_data</span> <span class="k">as</span> <span class="n">_ld</span>
+    <span class="n">_ld</span><span class="o">.</span><span class="n">load_rows</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">conn</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_query_all</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Real query runner: execute all analysis queries.</span>
+
+<span class="sd">    Delegates to query_data.query_all(conn) -&gt; dict.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">query_data</span> <span class="k">as</span> <span class="n">_qd</span>
+    <span class="k">return</span> <span class="n">_qd</span><span class="o">.</span><span class="n">query_all</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># App factory</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="create_app">
+<a class="viewcode-back" href="../api/app.html#app.create_app">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_app</span><span class="p">(</span><span class="n">config_object</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Flask application factory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config_object: Optional dict (or object with attributes) to</span>
+<span class="sd">                       override default configuration values.</span>
+<span class="sd">                       Tests pass a dict with DATABASE_URL, SCRAPER_FN, etc.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A configured Flask application instance.</span>
+
+<span class="sd">    Configuration keys understood by the app:</span>
+
+<span class="sd">    - **DATABASE_URL**: libpq-compatible connection string.</span>
+<span class="sd">      Falls back to the DATABASE_URL environment variable.</span>
+<span class="sd">    - **SCRAPER_FN**: callable() -&gt; list[dict]  – override the real scraper.</span>
+<span class="sd">    - **LOADER_FN**: callable(rows, conn)      – override the real loader.</span>
+<span class="sd">    - **QUERY_FN**: callable(conn) -&gt; dict    – override the real queries.</span>
+<span class="sd">    - **BUSY_GETTER**: callable() -&gt; bool        – override busy-state read.</span>
+<span class="sd">    - **BUSY_SETTER**: callable(bool)            – override busy-state write.</span>
+<span class="sd">    - **TESTING**: bool – standard Flask testing flag.</span>
+<span class="sd">    - **SECRET_KEY**: str  – Flask secret key.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">template_folder</span><span class="o">=</span><span class="s2">&quot;templates&quot;</span><span class="p">)</span>
+
+    <span class="c1"># ---- Defaults ----</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;SECRET_KEY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SECRET_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;module4-dev-key&quot;</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;postgresql://postgres:59061076@localhost:5432/gradcafe_module3&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;SCRAPER_FN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_default_scraper</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;LOADER_FN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_default_loader</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;QUERY_FN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_default_query_all</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;BUSY_GETTER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;BUSY_SETTER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># ---- Apply caller overrides ----</span>
+    <span class="k">if</span> <span class="n">config_object</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config_object</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">config_object</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">from_object</span><span class="p">(</span><span class="n">config_object</span><span class="p">)</span>
+
+    <span class="c1"># ---- Register routes ----</span>
+    <span class="n">_register_routes</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">app</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_db_connection</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open and return a psycopg connection using DATABASE_URL.&quot;&quot;&quot;</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Routes</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_register_routes</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Flask</span><span class="p">):</span>
+
+    <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+    <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/analysis&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analysis</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Render the main analysis page.</span>
+
+<span class="sd">        Calls QUERY_FN(conn) to obtain a dict of results and passes</span>
+<span class="sd">        them to the analysis.html template.</span>
+
+<span class="sd">        If QUERY_FN is set to a function that accepts zero arguments</span>
+<span class="sd">        (detected via ``__code__.co_argcount == 0``), the DB connection</span>
+<span class="sd">        is not opened — this is used by tests that supply a pure fake.</span>
+<span class="sd">        Otherwise a real connection is opened, passed in, and closed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">query_fn</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;QUERY_FN&quot;</span><span class="p">]</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">query_fn</span><span class="p">)</span>
+        <span class="n">needs_conn</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">needs_conn</span><span class="p">:</span>
+            <span class="n">conn</span> <span class="o">=</span> <span class="n">_get_db_connection</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">query_fn</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">query_fn</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span>
+            <span class="s2">&quot;analysis.html&quot;</span><span class="p">,</span>
+            <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+            <span class="n">busy</span><span class="o">=</span><span class="n">_is_busy</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/pull-data&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pull_data</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Trigger data scraping and loading.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            409 JSON {&quot;busy&quot;: true}  if already busy.</span>
+<span class="sd">            200 JSON {&quot;ok&quot;: true}    on success.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_is_busy</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;busy&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span> <span class="mi">409</span>
+
+        <span class="n">_set_busy</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">scraper_fn</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;SCRAPER_FN&quot;</span><span class="p">]</span>
+            <span class="n">loader_fn</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;LOADER_FN&quot;</span><span class="p">]</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">scraper_fn</span><span class="p">()</span>
+            <span class="n">conn</span> <span class="o">=</span> <span class="n">_get_db_connection</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">loader_fn</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">conn</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">_set_busy</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;ok&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span> <span class="mi">200</span>
+
+    <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/update-analysis&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">])</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_analysis</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Signal that analysis should refresh.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            409 JSON {&quot;busy&quot;: true}  if a pull is in progress.</span>
+<span class="sd">            200 JSON {&quot;ok&quot;: true}    otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_is_busy</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;busy&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span> <span class="mi">409</span>
+
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s2">&quot;ok&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span> <span class="mi">200</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Entry point</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">()</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Module 4.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
