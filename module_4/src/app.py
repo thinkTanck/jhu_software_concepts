@@ -61,11 +61,25 @@ def _default_scraper():
     Returns a list of raw row dicts scraped from GradCafe.
     This import is deferred so tests that override SCRAPER_FN
     never trigger a real network call.
+
+    The path to ``scrape.py`` is resolved as follows:
+
+    1. If the environment variable ``MODULE2_SCRAPE_PY`` is set, its value
+       is used as the absolute path to ``scrape.py``.  This lets tests
+       redirect the import to a temporary fake file without any monkeypatching
+       of ``pathlib``.
+    2. Otherwise the path is derived from this file's location:
+       ``<repo_root>/module_2/scrape.py``.
     """
     import importlib.util
-    import pathlib
+    from pathlib import Path
 
-    scrape_path = pathlib.Path(__file__).parent.parent.parent / "module_2" / "scrape.py"
+    override = os.environ.get("MODULE2_SCRAPE_PY")
+    if override:
+        scrape_path = Path(override)
+    else:
+        scrape_path = Path(__file__).resolve().parent.parent.parent / "module_2" / "scrape.py"
+
     spec = importlib.util.spec_from_file_location("_scrape", scrape_path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

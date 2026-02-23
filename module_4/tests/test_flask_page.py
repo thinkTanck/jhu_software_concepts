@@ -225,35 +225,59 @@ def test_scrape_status_module_importable():
 
 
 @pytest.mark.web
-def test_default_scraper_loads_scrape_py(monkeypatch, tmp_path):
+def test_default_scraper_uses_module2_scrape_py_env_override(monkeypatch, tmp_path):
     """
-    _default_scraper must dynamically load module_2/scrape.py and call
-    its scrape() function.  We patch pathlib.Path inside src.app to redirect
-    to a fake scrape.py so no real network call is made.
+    When MODULE2_SCRAPE_PY is set, _default_scraper must load that file
+    and call its scrape() function — no real network call, no pathlib
+    subclassing required.  Exercises the ``if override:`` branch.
     """
-    import pathlib as _pathlib
     import src.app as app_mod
 
-    # Create a minimal fake scrape.py
+    # Create a minimal fake scrape.py in a temp directory
     fake_scrape_py = tmp_path / "scrape.py"
     fake_scrape_py.write_text("def scrape(): return [{'test': True}]\n")
 
-    _real_Path = _pathlib.Path
-
-    class _PatchedPath(_real_Path):
-        # Override division to intercept the module_2/scrape.py chain
-        def __truediv__(self, other):
-            result = super().__truediv__(other)
-            if result.name == "scrape.py":
-                return _real_Path(str(fake_scrape_py))
-            return result
-
-    # Monkey-patch pathlib.Path used inside src.app._default_scraper
-    import pathlib as pathlib_mod
-    monkeypatch.setattr(pathlib_mod, "Path", _PatchedPath)
+    # Override the scrape.py path via the environment variable
+    monkeypatch.setenv("MODULE2_SCRAPE_PY", str(fake_scrape_py))
 
     rows = app_mod._default_scraper()
     assert rows == [{"test": True}]
+
+
+@pytest.mark.web
+def test_default_scraper_fallback_path(monkeypatch, tmp_path):
+    """
+    When MODULE2_SCRAPE_PY is NOT set, _default_scraper must derive the
+    path from __file__ and load module_2/scrape.py relative to the repo
+    root.  Exercises the ``else:`` branch.
+
+    We intercept importlib.util.spec_from_file_location so no real file
+    is needed, and assert the resolved path ends with module_2/scrape.py.
+    """
+    import importlib.util
+    import src.app as app_mod
+
+    # Ensure the env override is absent
+    monkeypatch.delenv("MODULE2_SCRAPE_PY", raising=False)
+
+    captured = {}
+
+    real_spec_from_file = importlib.util.spec_from_file_location
+
+    def _fake_spec(name, path, **kw):
+        captured["path"] = str(path)
+        # Build a real spec from the fake file so exec_module works
+        fake_file = tmp_path / "scrape.py"
+        fake_file.write_text("def scrape(): return [{'fallback': True}]\n")
+        return real_spec_from_file(name, fake_file, **kw)
+
+    monkeypatch.setattr(importlib.util, "spec_from_file_location", _fake_spec)
+
+    rows = app_mod._default_scraper()
+
+    # The path passed to spec_from_file_location must be the repo-relative one
+    assert captured["path"].replace("\\", "/").endswith("module_2/scrape.py")
+    assert rows == [{"fallback": True}]
 
 
 @pytest.mark.web
@@ -264,17 +288,12 @@ def test_get_db_connection_raises_when_no_database_url():
 
     This covers the guard branch added to prevent silent mis-connections.
     """
-    from src.app import create_app as _factory
-    import pytest as _pytest
+    from src.app import create_app as _factory, _get_db_connection
 
-    # Create app without DATABASE_URL in env and without passing it explicitly.
-    # The env var may be set in the test environment, so we temporarily clear it
-    # inside the app config after creation.
     _app = _factory({"TESTING": True, "QUERY_FN": lambda: {}})
     # Remove DATABASE_URL from config to trigger the guard
     _app.config.pop("DATABASE_URL", None)
 
     with _app.test_request_context():
-        with _pytest.raises(RuntimeError, match="DATABASE_URL is not set"):
-            from src.app import _get_db_connection
+        with pytest.raises(RuntimeError, match="DATABASE_URL is not set"):
             _get_db_connection()
