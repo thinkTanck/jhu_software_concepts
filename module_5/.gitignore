@@ -1,0 +1,28 @@
+# ============================================================
+# module_5/.gitignore
+# ============================================================
+
+# --- Secrets / credentials (NEVER commit) ---
+.env
+*.env
+secrets.*
+
+# --- Python runtime artefacts ---
+__pycache__/
+*.py[cod]
+*.pyo
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Pytest / coverage ---
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Build / packaging ---
+*.egg-info/
+dist/
+build/

@@ -1,0 +1,16 @@
+﻿........................................................................ [ 72%]
+...........................                                              [100%]
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.0-final-0 _______________
+
+Name                   Stmts   Miss  Cover   Missing
+----------------------------------------------------
+src\__init__.py            0      0   100%
+src\app.py                88      0   100%
+src\load_data.py         107      0   100%
+src\query_data.py         46      0   100%
+src\scrape_status.py       1      0   100%
+----------------------------------------------------
+TOTAL                    242      0   100%
+Required test coverage of 100% reached. Total coverage: 100.00%
+99 passed in 5.24s

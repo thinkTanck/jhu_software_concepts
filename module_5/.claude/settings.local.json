@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -m pytest:*)",
+      "Bash(py -m pylint:*)",
+      "Bash(/c/Users/Owner/projects/jhu_software_concepts/module_5/.venv/Scripts/python.exe -m pytest:*)",
+      "Bash(/c/Users/Owner/projects/jhu_software_concepts/module_5/.venv/Scripts/python.exe -m pylint:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:59061076@localhost:5432/gradcafe_module3\" /c/Users/Owner/projects/jhu_software_concepts/module_5/.venv/Scripts/python.exe -m pytest:*)",
+      "Bash(powershell.exe -Command \"[System.Environment]::GetEnvironmentVariable\\(''DATABASE_URL'', ''User''\\)\")",
+      "Bash(echo:*)",
+      "Bash(powershell.exe -Command \"[System.Environment]::GetEnvironmentVariable\\(''DATABASE_URL'', ''Machine''\\)\")",
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\Owner\\\\projects\\\\jhu_software_concepts\\\\module_5''; py -m pytest -c .\\\\pytest.ini .\\\\tests -q 2>&1 | Select-Object -Last 6\")",
+      "Bash(.venv/Scripts/python.exe -m pylint:*)"
+    ]
+  }
+}
