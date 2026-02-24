@@ -10,7 +10,25 @@
       "Bash(echo:*)",
       "Bash(powershell.exe -Command \"[System.Environment]::GetEnvironmentVariable\\(''DATABASE_URL'', ''Machine''\\)\")",
       "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\Owner\\\\projects\\\\jhu_software_concepts\\\\module_5''; py -m pytest -c .\\\\pytest.ini .\\\\tests -q 2>&1 | Select-Object -Last 6\")",
-      "Bash(.venv/Scripts/python.exe -m pylint:*)"
+      "Bash(.venv/Scripts/python.exe -m pylint:*)",
+      "Bash(dir:*)",
+      "Bash(\"/c/Users/Owner/projects/jhu_software_concepts/module_5/.venv/Scripts/python.exe\" -c \"import pydeps\")",
+      "Bash(dot:*)",
+      "Bash(snyk --version:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(printenv:*)",
+      "Bash(uv:*)",
+      "Bash(\"/c/Users/Owner/projects/jhu_software_concepts/module_5/.venv/Scripts/pip\" install pydeps)",
+      "Bash(\".venv/Scripts/pydeps\" src --noshow -o dependency.svg)",
+      "Bash(npm install:*)",
+      "Bash(npm root:*)",
+      "Bash(npm prefix:*)",
+      "Bash(\"/c/Users/Owner/AppData/Roaming/npm/snyk\" --version)",
+      "Bash(\"/c/Users/Owner/AppData/Roaming/npm/snyk\" test --file=requirements.txt --package-manager=pip)",
+      "Bash(\"/c/Users/Owner/AppData/Roaming/npm/snyk\" test --file=requirements.txt)",
+      "Bash(\"/c/Users/Owner/AppData/Roaming/npm/snyk\" whoami)",
+      "Bash(\"/c/Users/Owner/AppData/Roaming/npm/snyk\" config get api)"
     ]
   }
 }

@@ -26,3 +26,10 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+
+.coverage
+.claude/
+*.zip
+**/__pycache__/
+**/.pytest_cache/
+**/*.pyc
