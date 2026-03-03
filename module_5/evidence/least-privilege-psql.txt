@@ -1,0 +1,120 @@
+============================================================
+Evidence: Least-Privilege PostgreSQL Account Verification
+Module 5 — GradCafe Admissions Analysis
+============================================================
+Run in PowerShell (Windows). Replace placeholders:
+  your_admin_user  = your PostgreSQL superuser (e.g. postgres)
+  your_database    = the target database name (e.g. gradcafe_module3)
+============================================================
+
+
+----------------------------------------------------------
+STEP 0 — Discover actual table and sequence names
+         Run this BEFORE applying the SQL script to confirm
+         that object names in least_privilege.sql are correct.
+----------------------------------------------------------
+
+psql -U your_admin_user -d your_database -c "\dt public.*"
+
+psql -U your_admin_user -d your_database -c "\ds public.*"
+
+Expected: "applicants" appears in \dt output.
+          "applicants_id_seq" appears in \ds output.
+If names differ, update sql/least_privilege.sql before proceeding.
+
+
+----------------------------------------------------------
+STEP 1 — Apply the least-privilege SQL script
+----------------------------------------------------------
+
+psql -U your_admin_user -d your_database -f sql/least_privilege.sql
+
+(Run from the module_5/ directory so the relative path resolves correctly.)
+
+
+----------------------------------------------------------
+STEP 2 — Verify role attributes
+         rolsuper, rolcreatedb, rolcreaterole must all be FALSE (f)
+----------------------------------------------------------
+
+psql -U your_admin_user -d your_database -c "
+SELECT
+    rolname,
+    rolsuper,
+    rolcreatedb,
+    rolcreaterole,
+    rolinherit,
+    rolcanlogin
+FROM pg_roles
+WHERE rolname IN ('module5_app_role', 'module5_app_user')
+ORDER BY rolname;
+"
+
+Expected output:
+       rolname        | rolsuper | rolcreatedb | rolcreaterole | rolinherit | rolcanlogin
+ ---------------------+----------+-------------+---------------+------------+-------------
+  module5_app_role    | f        | f           | f             | f          | f
+  module5_app_user    | f        | f           | f             | t          | t
+
+Key checks:
+  rolsuper      = f  → NOT a superuser
+  rolcreatedb   = f  → cannot create new databases
+  rolcreaterole = f  → cannot create new roles
+  rolcanlogin   = t  → module5_app_user CAN log in (required for app connection)
+  rolcanlogin   = f  → module5_app_role CANNOT log in directly (role only)
+
+
+----------------------------------------------------------
+STEP 3 — Show table and sequence privileges (\dp command)
+----------------------------------------------------------
+
+psql -U your_admin_user -d your_database -c "\dp public.applicants"
+
+psql -U your_admin_user -d your_database -c "\dp public.applicants_id_seq"
+
+In the \dp output, look for module5_app_role in the "Access privileges" column.
+Expected privilege letters for the table:
+  r = SELECT   ✓ granted
+  a = INSERT   ✓ granted
+  w = UPDATE   ✗ NOT granted
+  d = DELETE   ✗ NOT granted
+
+Expected privilege letters for the sequence:
+  U = USAGE    ✓ granted
+  r = SELECT   ✓ granted
+
+
+----------------------------------------------------------
+STEP 4 — Query information_schema for table grants (alternative to \dp)
+----------------------------------------------------------
+
+psql -U your_admin_user -d your_database -c "
+SELECT
+    table_schema,
+    table_name,
+    grantee,
+    privilege_type,
+    is_grantable
+FROM information_schema.role_table_grants
+WHERE grantee IN ('module5_app_role', 'module5_app_user')
+  AND table_name = 'applicants'
+ORDER BY privilege_type;
+"
+
+Expected rows: SELECT and INSERT for module5_app_role on public.applicants.
+Must NOT appear: UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER.
+
+
+----------------------------------------------------------
+STEP 5 — Test login with the new user (optional smoke test)
+----------------------------------------------------------
+
+psql -U module5_app_user -d your_database -c "SELECT COUNT(*) FROM applicants;"
+
+Expected: returns a row count (not a permissions error).
+
+psql -U module5_app_user -d your_database -c "DELETE FROM applicants WHERE id = 1;"
+
+Expected: ERROR: permission denied for table applicants
+          (confirms DELETE is correctly blocked)
+============================================================
