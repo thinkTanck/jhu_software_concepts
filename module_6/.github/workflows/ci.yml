@@ -1,0 +1,61 @@
+name: Module 5 CI
+
+on:
+  push:
+    paths:
+      - 'module_5/**'
+  pull_request:
+    paths:
+      - 'module_5/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # postgres superuser required: conftest creates/drops the test_module4 schema
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      # Both DATABASE_URL and libpq PG* vars set for maximum compatibility
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: testdb
+      PGUSER: postgres
+      PGPASSWORD: postgres
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r module_5/requirements.txt
+          pip install -e module_5/
+
+      - name: Lint (pylint — must score 10.00/10)
+        working-directory: module_5
+        run: python -m pylint src
+
+      - name: Test (pytest — must pass all 99 tests)
+        working-directory: module_5
+        run: python -m pytest -q

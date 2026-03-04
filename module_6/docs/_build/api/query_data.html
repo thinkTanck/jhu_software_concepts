@@ -1,0 +1,362 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Query Functions (query_data.py) &mdash; GradCafe Admissions Analysis 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Testing Guide" href="../testing.html" />
+    <link rel="prev" title="Data Loader (load_data.py)" href="load_data.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GradCafe Admissions Analysis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="app.html">Flask Application (app.py)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scrape.html">Scraper (scrape.py)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clean.html">Data Cleaner (clean.py)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="load_data.html">Data Loader (load_data.py)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Query Functions (query_data.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.extra_question_1"><code class="docutils literal notranslate"><span class="pre">extra_question_1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.extra_question_2"><code class="docutils literal notranslate"><span class="pre">extra_question_2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q1_fall_2026_count"><code class="docutils literal notranslate"><span class="pre">q1_fall_2026_count()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q2_percent_international"><code class="docutils literal notranslate"><span class="pre">q2_percent_international()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q3_avg_scores"><code class="docutils literal notranslate"><span class="pre">q3_avg_scores()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q4_avg_gpa_us_fall_2026"><code class="docutils literal notranslate"><span class="pre">q4_avg_gpa_us_fall_2026()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q5_percent_accept_fall_2026"><code class="docutils literal notranslate"><span class="pre">q5_percent_accept_fall_2026()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q6_avg_gpa_accept_fall_2026"><code class="docutils literal notranslate"><span class="pre">q6_avg_gpa_accept_fall_2026()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q7_jhu_ms_cs_count"><code class="docutils literal notranslate"><span class="pre">q7_jhu_ms_cs_count()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q8_top_cs_phd_accepts"><code class="docutils literal notranslate"><span class="pre">q8_top_cs_phd_accepts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.q9_llm_vs_raw_comparison"><code class="docutils literal notranslate"><span class="pre">q9_llm_vs_raw_comparison()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query_data.query_all"><code class="docutils literal notranslate"><span class="pre">query_all()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GradCafe Admissions Analysis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Query Functions (query_data.py)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/query_data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-query_data">
+<span id="query-functions-query-data-py"></span><h1>Query Functions (query_data.py)<a class="headerlink" href="#module-query_data" title="Link to this heading"></a></h1>
+<p>query_data.py</p>
+<p>SQL query functions for the GradCafe analysis application.</p>
+<p>Each individual function accepts an active psycopg connection and
+returns a scalar value, tuple, or list of tuples.</p>
+<p><code class="docutils literal notranslate"><span class="pre">query_all(conn)</span></code> is the primary entry point used by app.py — it calls
+every query function and returns a dict whose keys are consumed by the
+analysis.html template.</p>
+<p>The dict always contains these keys:</p>
+<blockquote>
+<div><p>q1, q2, q3, q4, q5, q6, q7, q8, q9, extra_1, extra_2</p>
+</div></blockquote>
+<p>This module is designed to be completely DB-agnostic: callers supply
+the connection object, making it straightforward to inject test doubles.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.extra_question_1">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">extra_question_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#extra_question_1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.extra_question_1" title="Link to this definition"></a></dt>
+<dd><p>Average GPA grouped by degree type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">[(degree,</span> <span class="pre">avg_gpa),</span> <span class="pre">...]</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[tuple]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.extra_question_2">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">extra_question_2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#extra_question_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.extra_question_2" title="Link to this definition"></a></dt>
+<dd><p>Overall acceptance percentage across all applicants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Percentage rounded to two decimal places.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Decimal | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q1_fall_2026_count">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q1_fall_2026_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q1_fall_2026_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q1_fall_2026_count" title="Link to this definition"></a></dt>
+<dd><p>Return the total number of applicants for the Fall 2026 term.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Count of Fall 2026 applicants.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q2_percent_international">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q2_percent_international</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q2_percent_international"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q2_percent_international" title="Link to this definition"></a></dt>
+<dd><p>Calculate the percentage of applicants classified as International.</p>
+<p>Only rows with a non-null <code class="docutils literal notranslate"><span class="pre">us_or_international</span></code> value are included
+in the denominator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Percentage rounded to two decimal places.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Decimal | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q3_avg_scores">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q3_avg_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q3_avg_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q3_avg_scores" title="Link to this definition"></a></dt>
+<dd><p>Compute average GPA and GRE scores for all applicants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">(avg_gpa,</span> <span class="pre">avg_gre_total,</span> <span class="pre">avg_gre_verbal,</span> <span class="pre">avg_gre_aw)</span></code></dt><dd><p>each rounded to two decimal places (may be None if no data).</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q4_avg_gpa_us_fall_2026">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q4_avg_gpa_us_fall_2026</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q4_avg_gpa_us_fall_2026"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q4_avg_gpa_us_fall_2026" title="Link to this definition"></a></dt>
+<dd><p>Average GPA of American applicants for Fall 2026.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Average GPA rounded to two decimal places.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Decimal | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q5_percent_accept_fall_2026">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q5_percent_accept_fall_2026</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q5_percent_accept_fall_2026"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q5_percent_accept_fall_2026" title="Link to this definition"></a></dt>
+<dd><p>Percentage of Fall 2026 applicants who were accepted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Percentage rounded to two decimal places.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Decimal | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q6_avg_gpa_accept_fall_2026">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q6_avg_gpa_accept_fall_2026</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q6_avg_gpa_accept_fall_2026"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q6_avg_gpa_accept_fall_2026" title="Link to this definition"></a></dt>
+<dd><p>Average GPA of accepted Fall 2026 applicants.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Average GPA rounded to two decimal places.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Decimal | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q7_jhu_ms_cs_count">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q7_jhu_ms_cs_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q7_jhu_ms_cs_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q7_jhu_ms_cs_count" title="Link to this definition"></a></dt>
+<dd><p>Count Master’s Computer Science applicants who mentioned JHU.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matching record count.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q8_top_cs_phd_accepts">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q8_top_cs_phd_accepts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q8_top_cs_phd_accepts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q8_top_cs_phd_accepts" title="Link to this definition"></a></dt>
+<dd><p>Count accepted PhD CS applicants (2026) at top universities.</p>
+<p>Universities: Georgetown, MIT, Stanford, Carnegie Mellon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matching record count.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.q9_llm_vs_raw_comparison">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">q9_llm_vs_raw_comparison</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#q9_llm_vs_raw_comparison"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.q9_llm_vs_raw_comparison" title="Link to this definition"></a></dt>
+<dd><p>Same analysis as Q8 using LLM-generated structured fields.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Matching record count.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="query_data.query_all">
+<span class="sig-prename descclassname"><span class="pre">query_data.</span></span><span class="sig-name descname"><span class="pre">query_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/query_data.html#query_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#query_data.query_all" title="Link to this definition"></a></dt>
+<dd><p>Run all analysis queries and return results as a dict.</p>
+<p>Keys match the variable names expected by the <code class="docutils literal notranslate"><span class="pre">analysis.html</span></code>
+Jinja2 template:</p>
+<p><code class="docutils literal notranslate"><span class="pre">q1</span></code>, <code class="docutils literal notranslate"><span class="pre">q2</span></code>, <code class="docutils literal notranslate"><span class="pre">q3</span></code>, <code class="docutils literal notranslate"><span class="pre">q4</span></code>, <code class="docutils literal notranslate"><span class="pre">q5</span></code>, <code class="docutils literal notranslate"><span class="pre">q6</span></code>, <code class="docutils literal notranslate"><span class="pre">q7</span></code>,
+<code class="docutils literal notranslate"><span class="pre">q8</span></code>, <code class="docutils literal notranslate"><span class="pre">q9</span></code>, <code class="docutils literal notranslate"><span class="pre">extra_1</span></code>, <code class="docutils literal notranslate"><span class="pre">extra_2</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conn</strong> – Active psycopg connection.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Query results keyed by question label.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="load_data.html" class="btn btn-neutral float-left" title="Data Loader (load_data.py)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../testing.html" class="btn btn-neutral float-right" title="Testing Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Module 4.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,284 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Loader (load_data.py) &mdash; GradCafe Admissions Analysis 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Query Functions (query_data.py)" href="query_data.html" />
+    <link rel="prev" title="Data Cleaner (clean.py)" href="clean.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GradCafe Admissions Analysis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="app.html">Flask Application (app.py)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scrape.html">Scraper (scrape.py)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clean.html">Data Cleaner (clean.py)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Data Loader (load_data.py)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#public-api-used-by-app-py-and-tests">Public API (used by app.py and tests)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.extract_degree"><code class="docutils literal notranslate"><span class="pre">extract_degree()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.extract_gre_parts"><code class="docutils literal notranslate"><span class="pre">extract_gre_parts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.extract_nationality"><code class="docutils literal notranslate"><span class="pre">extract_nationality()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.extract_program_from_notes"><code class="docutils literal notranslate"><span class="pre">extract_program_from_notes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.extract_status_from_notes"><code class="docutils literal notranslate"><span class="pre">extract_status_from_notes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.extract_term"><code class="docutils literal notranslate"><span class="pre">extract_term()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.extract_university_from_notes"><code class="docutils literal notranslate"><span class="pre">extract_university_from_notes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.load_rows"><code class="docutils literal notranslate"><span class="pre">load_rows()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.parse_date"><code class="docutils literal notranslate"><span class="pre">parse_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.parse_float"><code class="docutils literal notranslate"><span class="pre">parse_float()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load_data.split_notes"><code class="docutils literal notranslate"><span class="pre">split_notes()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="query_data.html">Query Functions (query_data.py)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GradCafe Admissions Analysis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Data Loader (load_data.py)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/load_data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-load_data">
+<span id="data-loader-load-data-py"></span><h1>Data Loader (load_data.py)<a class="headerlink" href="#module-load_data" title="Link to this heading"></a></h1>
+<p>load_data.py</p>
+<p>Loads cleaned and LLM-extended applicant data into the PostgreSQL
+<code class="docutils literal notranslate"><span class="pre">applicants</span></code> table.</p>
+<section id="public-api-used-by-app-py-and-tests">
+<h2>Public API (used by app.py and tests)<a class="headerlink" href="#public-api-used-by-app-py-and-tests" title="Link to this heading"></a></h2>
+<dl>
+<dt>load_rows(rows, conn)</dt><dd><p>Insert <em>rows</em> (list of dicts) into the database using the supplied
+psycopg connection.  The connection is <strong>not</strong> closed by this function.</p>
+<p>Idempotency: rows are upserted on the unique constraint
+<code class="docutils literal notranslate"><span class="pre">(comments,</span> <span class="pre">date_added,</span> <span class="pre">url)</span></code> so that re-running the loader with
+identical data produces no duplicates.</p>
+</dd>
+<dt>main()</dt><dd><p>CLI entry point: reads the JSON file and calls load_rows.</p>
+</dd>
+</dl>
+<p>Parsing helpers are module-level so they can be imported and unit-tested.</p>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.extract_degree">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">extract_degree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#extract_degree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.extract_degree" title="Link to this definition"></a></dt>
+<dd><p>Infer degree type from <em>text</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;PhD&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Masters&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.extract_gre_parts">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">extract_gre_parts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#extract_gre_parts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.extract_gre_parts" title="Link to this definition"></a></dt>
+<dd><p>Extract GRE total, verbal, and AW scores from <em>text</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple <code class="docutils literal notranslate"><span class="pre">(gre_total,</span> <span class="pre">gre_verbal,</span> <span class="pre">gre_aw)</span></code> — each float or None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.extract_nationality">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">extract_nationality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#extract_nationality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.extract_nationality" title="Link to this definition"></a></dt>
+<dd><p>Infer nationality classification from free-text <em>text</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;International&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;American&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.extract_program_from_notes">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">extract_program_from_notes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#extract_program_from_notes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.extract_program_from_notes" title="Link to this definition"></a></dt>
+<dd><p>Return the second <code class="docutils literal notranslate"><span class="pre">|</span></code>-delimited segment of <em>text</em> (program name).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.extract_status_from_notes">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">extract_status_from_notes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#extract_status_from_notes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.extract_status_from_notes" title="Link to this definition"></a></dt>
+<dd><p>Detect decision status keyword from <em>text</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;Accepted&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Rejected&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Waitlisted&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.extract_term">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">extract_term</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#extract_term"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.extract_term" title="Link to this definition"></a></dt>
+<dd><p>Extract academic term (Fall/Spring/Summer + 4-digit year) from <em>text</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str like <code class="docutils literal notranslate"><span class="pre">&quot;Fall</span> <span class="pre">2026&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.extract_university_from_notes">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">extract_university_from_notes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#extract_university_from_notes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.extract_university_from_notes" title="Link to this definition"></a></dt>
+<dd><p>Return the first <code class="docutils literal notranslate"><span class="pre">|</span></code>-delimited segment of <em>text</em> (university name).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.load_rows">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">load_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#load_rows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.load_rows" title="Link to this definition"></a></dt>
+<dd><p>Insert <em>rows</em> into the <code class="docutils literal notranslate"><span class="pre">applicants</span></code> table using <em>conn</em>.</p>
+<p>Each element of <em>rows</em> is a dict with the same keys produced by the
+Module 2 scraper / LLM pipeline.</p>
+<p>Idempotency is enforced via <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">CONFLICT</span> <span class="pre">DO</span> <span class="pre">NOTHING</span></code> on the unique
+constraint <code class="docutils literal notranslate"><span class="pre">(comments,</span> <span class="pre">date_added,</span> <span class="pre">url)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rows</strong> (<em>list</em><em>[</em><em>dict</em><em>]</em>) – Raw applicant dicts from the scraper.</p></li>
+<li><p><strong>conn</strong> – Active psycopg connection.  The caller is responsible for
+closing / committing it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of rows actually inserted (conflicts excluded).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.main">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">database_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.main" title="Link to this definition"></a></dt>
+<dd><p>CLI entry point.  Reads a JSON file and loads it into the database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_json</strong> (<em>str</em><em>|</em><em>None</em>) – Path to the JSON file.  Defaults to the
+Module 2 output file relative to this script.</p></li>
+<li><p><strong>database_url</strong> (<em>str</em><em>|</em><em>None</em>) – libpq connection string.  Defaults to
+the <code class="docutils literal notranslate"><span class="pre">DATABASE_URL</span></code> environment variable.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.parse_date">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">parse_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#parse_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.parse_date" title="Link to this definition"></a></dt>
+<dd><p>Parse <em>value</em> string into a <code class="xref py py-class docutils literal notranslate"><span class="pre">datetime.date</span></code>.</p>
+<p>Tries multiple common formats; returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if none match.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.parse_float">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">parse_float</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#parse_float"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.parse_float" title="Link to this definition"></a></dt>
+<dd><p>Safely convert <em>value</em> to float.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float or None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="load_data.split_notes">
+<span class="sig-prename descclassname"><span class="pre">load_data.</span></span><span class="sig-name descname"><span class="pre">split_notes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/load_data.html#split_notes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#load_data.split_notes" title="Link to this definition"></a></dt>
+<dd><p>Split <em>text</em> on <code class="docutils literal notranslate"><span class="pre">|</span></code> and return non-empty, stripped segments.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="clean.html" class="btn btn-neutral float-left" title="Data Cleaner (clean.py)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="query_data.html" class="btn btn-neutral float-right" title="Query Functions (query_data.py)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Module 4.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

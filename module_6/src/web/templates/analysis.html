@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ title or "GradCafe Admissions Analysis (Module 3)" }}</title>
+
+  {% if queued_msg %}
+  <!-- invisible auto-refresh after queuing, so results repopulate once worker updates DB -->
+  <meta http-equiv="refresh" content="2; url=/analysis">
+  {% endif %}
+</head>
+<body>
+  <h1>GradCafe Admissions Analysis (Module 3)</h1>
+
+  {% if queued_msg %}
+    <p><strong>{{ queued_msg }}</strong></p>
+  {% endif %}
+
+  <div style="margin-bottom: 16px;">
+    <form method="POST" action="/analyze" style="display:inline;">
+      <button type="submit" name="action" value="scrape_new_data">Scrape New Data (Queue)</button>
+    </form>
+
+    <form method="POST" action="/analyze" style="display:inline; margin-left: 8px;">
+      <button type="submit" name="action" value="recompute_analytics">Recompute Analytics (Queue)</button>
+    </form>
+  </div>
+
+  <hr />
+
+  <h2>How many entries do you have in your database who have applied for Fall 2026?</h2>
+  <p>Answer: Applicant count: [{{ results.q1 }}]</p>
+
+  <h2>What percentage of entries are from International students (to two decimal places)?</h2>
+  <p>
+    Answer: Percent International:
+    {% if results.q2 is not none %}
+      [{{ "%.2f"|format(results.q2|float) }}]%
+    {% else %}
+      N/A
+    {% endif %}
+  </p>
+
+  <h2>What is the average GPA, GRE, GRE V, and GRE AW of applicants who provided these metrics?</h2>
+  <p>Answer:</p>
+  <ul>
+    <li>Average GPA: [{{ results.q3[0] }}]</li>
+    <li>Average GRE Total: [{{ results.q3[1] }}]</li>
+    <li>Average GRE Verbal: [{{ results.q3[2] }}]</li>
+    <li>Average GRE AW: [{{ results.q3[3] }}]</li>
+  </ul>
+
+  <h2>What is the average GPA of American students who applied for Fall 2026?</h2>
+  <p>Answer: Average GPA American: [{{ results.q4 }}]</p>
+
+  <h2>What percent of entries for Fall 2026 are Acceptances (to two decimal places)?</h2>
+  <p>
+    Answer: Acceptance percent:
+    {% if results.q5 is not none %}
+      [{{ "%.2f"|format(results.q5|float) }}]%
+    {% else %}
+      N/A
+    {% endif %}
+  </p>
+
+  <h2>What is the average GPA of applicants who applied for Fall 2026 who are Acceptances?</h2>
+  <p>Answer: Average GPA Acceptance: [{{ results.q6 }}]</p>
+
+  <h2>How many applicants applied to Johns Hopkins University for a Master's degree in Computer Science?</h2>
+  <p>Answer: [{{ results.q7 }}]</p>
+
+  <h2>How many PhD CS acceptances at Georgetown, MIT, Stanford, CMU?</h2>
+  <p>Answer: [{{ results.q8 }}]</p>
+
+  <h2>How does this change using LLM-generated fields?</h2>
+  <p>Answer: [{{ results.q9 }}]</p>
+</body>
+</html>

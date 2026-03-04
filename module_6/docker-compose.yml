@@ -1,0 +1,77 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    image: module_6-worker
+    build:
+      context: ./src/worker
+    environment:
+      DATABASE_URL: postgresql://appuser:apppass@db:5432/appdb
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      db_init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  db_init:
+    image: module_6-worker
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://appuser:apppass@db:5432/appdb
+      DATA_PATH: /work/src/data/applicant_data.json
+    volumes:
+      - ./src:/work/src:ro
+    command: ["python", "-u", "/work/src/db/load_data.py"]
+    restart: "no"
+
+  web:
+    build:
+      context: ./src/web
+    environment:
+      DATABASE_URL: postgresql://appuser:apppass@db:5432/appdb
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      db_init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

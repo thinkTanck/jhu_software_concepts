@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testing Guide &mdash; GradCafe Admissions Analysis 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Query Functions (query_data.py)" href="api/query_data.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GradCafe Admissions Analysis
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Testing Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-tests">Running the Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-files">Test Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#markers">Markers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fixtures-and-test-doubles">Fixtures and Test Doubles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#stable-selectors">Stable Selectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#database-isolation">Database Isolation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GradCafe Admissions Analysis</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Testing Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/testing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="testing-guide">
+<h1>Testing Guide<a class="headerlink" href="#testing-guide" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The test suite is located in <code class="docutils literal notranslate"><span class="pre">module_4/tests/</span></code> and consists of <strong>five</strong> test
+files, each covering a specific aspect of the application.  All tests are
+marked with at least one custom pytest marker.</p>
+</section>
+<section id="running-the-tests">
+<h2>Running the Tests<a class="headerlink" href="#running-the-tests" title="Link to this heading"></a></h2>
+<p>From the <strong>repository root</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;web or buttons or analysis or db or integration&quot;</span> <span class="n">module_4</span><span class="o">/</span><span class="n">tests</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">pytest.ini</span></code> file (in <code class="docutils literal notranslate"><span class="pre">module_4/</span></code>) configures:</p>
+<ul class="simple">
+<li><p>Coverage measurement over <code class="docutils literal notranslate"><span class="pre">module_4/src</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--cov-fail-under=100</span></code> — the suite <strong>must</strong> reach 100% coverage</p></li>
+<li><p>All five custom markers</p></li>
+</ul>
+</section>
+<section id="test-files">
+<h2>Test Files<a class="headerlink" href="#test-files" title="Link to this heading"></a></h2>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">test_flask_page.py</span></code></dt><dd><p>Tests marked <code class="docutils literal notranslate"><span class="pre">web</span></code>.</p>
+<p>Verifies that:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">create_app()</span></code> creates a valid Flask app with all required routes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/analysis</span></code> returns HTTP 200.</p></li>
+<li><p>The HTML contains both buttons (“Pull Data”, “Update Analysis”).</p></li>
+<li><p>The page contains the word “Analysis” and at least one “Answer:” label.</p></li>
+<li><p>Both buttons have the required <code class="docutils literal notranslate"><span class="pre">data-testid</span></code> attributes.</p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">test_buttons.py</span></code></dt><dd><p>Tests marked <code class="docutils literal notranslate"><span class="pre">buttons</span></code>.</p>
+<p>Verifies that:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/pull-data</span></code> returns <code class="docutils literal notranslate"><span class="pre">200</span> <span class="pre">{&quot;ok&quot;:</span> <span class="pre">true}</span></code> and calls the loader.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/update-analysis</span></code> returns <code class="docutils literal notranslate"><span class="pre">200</span> <span class="pre">{&quot;ok&quot;:</span> <span class="pre">true}</span></code> when not busy.</p></li>
+<li><p>When busy, both <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/pull-data</span></code> and <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/update-analysis</span></code> return
+<code class="docutils literal notranslate"><span class="pre">409</span> <span class="pre">{&quot;busy&quot;:</span> <span class="pre">true}</span></code> and do <strong>not</strong> call the loader.</p></li>
+<li><p>The busy state resets to <code class="docutils literal notranslate"><span class="pre">False</span></code> after a successful pull.</p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">test_analysis_format.py</span></code></dt><dd><p>Tests marked <code class="docutils literal notranslate"><span class="pre">analysis</span></code>.</p>
+<p>Verifies that:</p>
+<ul class="simple">
+<li><p>All <code class="docutils literal notranslate"><span class="pre">Answer:</span></code> labels are present in the rendered HTML.</p></li>
+<li><p>Percentage values are formatted to exactly two decimal places (e.g.
+<code class="docutils literal notranslate"><span class="pre">39.28%</span></code>), verified with <code class="docutils literal notranslate"><span class="pre">re.fullmatch</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code> percentage values render as <code class="docutils literal notranslate"><span class="pre">N/A</span></code> without raising a template
+error.</p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">test_db_insert.py</span></code></dt><dd><p>Tests marked <code class="docutils literal notranslate"><span class="pre">db</span></code>.</p>
+<p>Verifies that:</p>
+<ul class="simple">
+<li><p>The test table is empty before each insert (isolation via TRUNCATE).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">load_rows()</span></code> inserts the correct number of rows.</p></li>
+<li><p>Required non-null fields (<code class="docutils literal notranslate"><span class="pre">comments</span></code>, <code class="docutils literal notranslate"><span class="pre">url</span></code>) are populated.</p></li>
+<li><p>Running <code class="docutils literal notranslate"><span class="pre">load_rows()</span></code> twice with identical data does <strong>not</strong> create
+duplicates (idempotency via <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">CONFLICT</span> <span class="pre">DO</span> <span class="pre">NOTHING</span></code>).</p></li>
+<li><p>All parsing helper functions handle edge cases (None, empty, no-match).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_all()</span></code> returns a dict with all required keys.</p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">test_integration_end_to_end.py</span></code></dt><dd><p>Tests marked <code class="docutils literal notranslate"><span class="pre">integration</span></code>.</p>
+<p>Verifies the complete flow:</p>
+<ol class="arabic simple">
+<li><p>Inject fake scraper returning multiple records.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/pull-data</span></code> succeeds and rows appear in the DB.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/update-analysis</span></code> succeeds when not busy.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/analysis</span></code> shows updated results with correct formatting.</p></li>
+<li><p>Multiple pulls with overlapping data remain consistent with the
+uniqueness policy.</p></li>
+</ol>
+</dd>
+</dl>
+</section>
+<section id="markers">
+<h2>Markers<a class="headerlink" href="#markers" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Marker</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">web</span></code></p></td>
+<td><p>Flask route/page rendering tests</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">buttons</span></code></p></td>
+<td><p>Pull Data and Update Analysis behavior</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">analysis</span></code></p></td>
+<td><p>Formatting/rounding of analysis output</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">db</span></code></p></td>
+<td><p>Database schema, inserts, selects</p></td>
+</tr>
+<tr class="row-even"><td colspan="2"><p><code class="docutils literal notranslate"><span class="pre">integration</span></code> | End-to-end flows</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="fixtures-and-test-doubles">
+<h2>Fixtures and Test Doubles<a class="headerlink" href="#fixtures-and-test-doubles" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">conftest.py</span></code> provides:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">_schema_setup</span></code> (session, autouse)</dt><dd><p>Creates the <code class="docutils literal notranslate"><span class="pre">test_module4</span></code> schema and <code class="docutils literal notranslate"><span class="pre">applicants</span></code> table once per
+session; drops it at session end.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">db_transaction</span></code> (function)</dt><dd><p>Opens a fresh psycopg connection, sets <code class="docutils literal notranslate"><span class="pre">search_path</span></code> to
+<code class="docutils literal notranslate"><span class="pre">test_module4</span></code>, and TRUNCATEs the table for isolation.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">app</span></code> (function)</dt><dd><p>A Flask app with <code class="docutils literal notranslate"><span class="pre">QUERY_FN</span></code> set to a zero-argument fake that returns
+hardcoded results — no DB connection needed for page rendering tests.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">client</span></code> (function)</dt><dd><p>A <code class="docutils literal notranslate"><span class="pre">werkzeug.test.Client</span></code> wrapping the <code class="docutils literal notranslate"><span class="pre">app</span></code> fixture.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">db_app</span></code> (function)</dt><dd><p>A Flask app with real <code class="docutils literal notranslate"><span class="pre">LOADER_FN</span></code> and <code class="docutils literal notranslate"><span class="pre">QUERY_FN</span></code> targeting the
+<code class="docutils literal notranslate"><span class="pre">test_module4</span></code> schema via the <code class="docutils literal notranslate"><span class="pre">db_transaction</span></code> connection.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">db_client</span></code> (function)</dt><dd><p>A test client wrapping <code class="docutils literal notranslate"><span class="pre">db_app</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="stable-selectors">
+<h2>Stable Selectors<a class="headerlink" href="#stable-selectors" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">analysis.html</span></code> template includes <code class="docutils literal notranslate"><span class="pre">data-testid</span></code> attributes on
+both action buttons:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data-testid=&quot;pull-data-btn&quot;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data-testid=&quot;update-analysis-btn&quot;</span></code></p></li>
+</ul>
+<p>These are used by tests for stable element selection:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">btn</span> <span class="o">=</span> <span class="n">soup</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;button&quot;</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;data-testid&quot;</span><span class="p">:</span> <span class="s2">&quot;pull-data-btn&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
+</section>
+<section id="database-isolation">
+<h2>Database Isolation<a class="headerlink" href="#database-isolation" title="Link to this heading"></a></h2>
+<p>Tests that write to the database use the <code class="docutils literal notranslate"><span class="pre">test_module4</span></code> schema — a
+completely separate schema from the production <code class="docutils literal notranslate"><span class="pre">public.applicants</span></code> table.
+Each test gets a fresh connection and a <code class="docutils literal notranslate"><span class="pre">TRUNCATE</span> <span class="pre">…</span> <span class="pre">RESTART</span> <span class="pre">IDENTITY</span></code>
+before execution, ensuring fully deterministic results.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api/query_data.html" class="btn btn-neutral float-left" title="Query Functions (query_data.py)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Module 4.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GradCafe Admissions Analysis (Module 3)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        h1 {
+            margin-bottom: 30px;
+        }
+        h2 {
+            margin-top: 40px;
+        }
+        .question {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .answer {
+            margin-left: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #999;
+            padding: 6px 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<h1>GradCafe Admissions Analysis (Module 3)</h1>
+
+<p class="question">
+How many entries do you have in your database who have applied for Fall 2026?
+</p>
+<p class="answer">
+Answer: Applicant count: {{ results.q1 }}
+</p>
+
+<p class="question">
+What percentage of entries are from International students (to two decimal places)?
+</p>
+<p class="answer">
+Answer: Percent International: {{ results.q2 }}%
+</p>
+
+<p class="question">
+What is the average GPA, GRE, GRE V, and GRE AW of applicants who provided these metrics?
+</p>
+<p class="answer">
+Answer:<br>
+Average GPA: {{ results.q3[0] }}<br>
+Average GRE Total: {{ results.q3[1] }}<br>
+Average GRE Verbal: {{ results.q3[2] }}<br>
+Average GRE AW: {{ results.q3[3] }}
+</p>
+
+<p class="question">
+What is the average GPA of American students who applied for Fall 2026?
+</p>
+<p class="answer">
+Answer: Average GPA American: {{ results.q4 }}
+</p>
+
+<p class="question">
+What percent of entries for Fall 2026 are Acceptances (to two decimal places)?
+</p>
+<p class="answer">
+Answer: Acceptance percent: {{ results.q5 }}%
+</p>
+
+<p class="question">
+What is the average GPA of applicants who applied for Fall 2026 who are Acceptances?
+</p>
+<p class="answer">
+Answer: Average GPA Acceptance: {{ results.q6 }}
+</p>
+
+<p class="question">
+How many applicants applied to Johns Hopkins University for a Master’s degree in Computer Science?
+</p>
+<p class="answer">
+Answer: Applicant count: {{ results.q7 }}
+</p>
+
+<p class="question">
+How many PhD Computer Science applicants were accepted in 2026 at Georgetown, MIT, Stanford, or Carnegie Mellon University?
+</p>
+<p class="answer">
+Answer: Applicant count: {{ results.q8 }}
+</p>
+
+<p class="question">
+How many PhD Computer Science applicants were accepted in 2026 at those same institutions using LLM-derived fields?
+</p>
+<p class="answer">
+Answer: Applicant count: {{ results.q9 }}
+</p>
+
+<h2>Additional Analysis</h2>
+
+<p class="question">
+What is the average GPA by degree type?
+</p>
+<p class="answer">
+Answer:
+</p>
+
+<table>
+    <tr>
+        <th>Degree</th>
+        <th>Average GPA</th>
+    </tr>
+    {% for degree, gpa in results.q10 %}
+    <tr>
+        <td>{{ degree }}</td>
+        <td>{{ gpa }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<p class="question">
+What is the overall acceptance rate across all applicants?
+</p>
+<p class="answer">
+Answer: Overall acceptance rate: {{ results.q11 }}%
+</p>
+
+</body>
+</html>

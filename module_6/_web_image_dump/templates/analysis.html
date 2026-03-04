@@ -1,0 +1,45 @@
+<!-- module_6/src/web/templates/analysis.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ title or "Module 6" }}</title>
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; margin: 24px; }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0 20px; }
+      .btn { padding: 10px 14px; border: 1px solid #111; border-radius: 6px; cursor: pointer; }
+      .btn.primary { background:#111; color:#fff; }
+      .btn.secondary { background:#fff; color:#111; }
+      .banner { padding: 10px 12px; border-radius: 6px; margin: 12px 0 18px; border: 1px solid #ddd; background: #f6f6f6; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-top: 12px; }
+      .muted { color:#666; }
+    </style>
+  </head>
+  <body>
+    <h1>Analysis</h1>
+
+    {% if queued_msg %}
+      <div class="banner"><strong>Queued.</strong> {{ queued_msg }}</div>
+    {% endif %}
+
+    <div class="row">
+      <form method="post" action="{{ url_for('analyze') }}">
+        <input type="hidden" name="action" value="scrape_new_data" />
+        <button class="btn secondary" type="submit">Scrape new data</button>
+      </form>
+
+      <form method="post" action="{{ url_for('analyze') }}">
+        <input type="hidden" name="action" value="recompute_analytics" />
+        <button class="btn primary" type="submit">Recompute analytics</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div><strong>Latest run:</strong> <span class="muted">{{ results.latest_run }}</span></div>
+      <div><strong>Applicant count (q1):</strong> <span class="muted">{{ results.q1 }}</span></div>
+      <div><strong>Row count:</strong> <span class="muted">{{ results.row_count }}</span></div>
+      <div class="muted" style="margin-top:10px;">{{ results.notes }}</div>
+    </div>
+  </body>
+</html>
